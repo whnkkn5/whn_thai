@@ -159,28 +159,13 @@
                     {% endif %}
                     {% if st_full %}
                     <p class="text-danger small mb-0"><i class="bi bi-lock me-1"></i>ครบจำนวนแล้ว ({{ event.max_students }} คน)</p>
-                    {% elif not students %}
-                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>เพิ่มนักเรียนในแท็บ "นักเรียน" ก่อน</p>
                     {% else %}
-                    {% set ns_st = namespace(has_avail=false) %}
-                    {% for st in students %}{% if st.id not in reg_st_ids %}{% set ns_st.has_avail = true %}{% endif %}{% endfor %}
-                    {% if ns_st.has_avail %}
-                    <form method="POST" action="{{ url_for('add_participant', eid=event.id) }}" class="d-flex gap-1">
-                      <select name="student_id" class="form-select form-select-sm" required>
-                        <option value="">— เลือกนักเรียน —</option>
-                        {% for st in students %}
-                        {% if st.id not in reg_st_ids %}
-                        <option value="{{ st.id }}">{{ st.name }}</option>
-                        {% endif %}
-                        {% endfor %}
-                      </select>
+                    <form method="POST" action="{{ url_for('add_participant_direct', eid=event.id) }}" class="d-flex gap-1">
+                      <input name="student_name" class="form-control form-control-sm" placeholder="พิมพ์ชื่อ-สกุล นักเรียน" required>
                       <button class="btn btn-sm btn-info text-white" style="white-space:nowrap">
                         <i class="bi bi-plus"></i>
                       </button>
                     </form>
-                    {% else %}
-                    <p class="text-muted small mb-0">ลงทะเบียนนักเรียนครบทุกคนแล้ว</p>
-                    {% endif %}
                     {% endif %}
                   </div>
                 </div>
@@ -220,28 +205,14 @@
                     {% endif %}
                     {% if tc_full %}
                     <p class="text-danger small mb-0"><i class="bi bi-lock me-1"></i>ครบจำนวนแล้ว ({{ event.max_coaches }} คน)</p>
-                    {% elif not teachers %}
-                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>เพิ่มครูในแท็บ "ครู" ก่อน</p>
                     {% else %}
-                    {% set ns_tc = namespace(has_avail=false) %}
-                    {% for t in teachers %}{% if t.id not in reg_tc_ids %}{% set ns_tc.has_avail = true %}{% endif %}{% endfor %}
-                    {% if ns_tc.has_avail %}
-                    <form method="POST" action="{{ url_for('add_coach', eid=event.id) }}" class="d-flex gap-1">
-                      <select name="teacher_id" class="form-select form-select-sm" required>
-                        <option value="">— เลือกครู —</option>
-                        {% for t in teachers %}
-                        {% if t.id not in reg_tc_ids %}
-                        <option value="{{ t.id }}">{{ t.name }} ({{ t.position }})</option>
-                        {% endif %}
-                        {% endfor %}
-                      </select>
+                    <form method="POST" action="{{ url_for('add_coach_direct', eid=event.id) }}" class="d-flex gap-1 flex-wrap">
+                      <input name="teacher_name" class="form-control form-control-sm" placeholder="ชื่อ-สกุล ครู" required style="min-width:140px;flex:1">
+                      <input name="position" class="form-control form-control-sm" placeholder="ตำแหน่ง" value="ครู" style="max-width:100px">
                       <button class="btn btn-sm btn-warning" style="white-space:nowrap">
                         <i class="bi bi-plus"></i>
                       </button>
                     </form>
-                    {% else %}
-                    <p class="text-muted small mb-0">ลงทะเบียนครูครบทุกคนแล้ว</p>
-                    {% endif %}
                     {% endif %}
                   </div>
                 </div>
@@ -264,12 +235,7 @@
         <span class="badge bg-white text-info">{{ students|length }} คน</span>
       </div>
       <div class="card-body">
-        <form method="POST" action="{{ url_for('add_student', sid=school.id) }}" class="mb-3">
-          <div class="input-group">
-            <input name="name" class="form-control" placeholder="ชื่อ-สกุล นักเรียน" required>
-            <button class="btn btn-info text-white"><i class="bi bi-plus"></i> เพิ่ม</button>
-          </div>
-        </form>
+        <p class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>เพิ่มนักเรียนได้ในแท็บ "กิจกรรมการแข่งขัน" ด้านบน</p>
         {% if students %}
         <div style="max-height:420px; overflow-y:auto">
           <ul class="list-group list-group-flush">
@@ -322,13 +288,7 @@
         <span class="badge bg-white text-warning">{{ teachers|length }} คน</span>
       </div>
       <div class="card-body">
-        <form method="POST" action="{{ url_for('add_teacher', sid=school.id) }}" class="mb-3">
-          <div class="input-group">
-            <input name="name" class="form-control" placeholder="ชื่อ-สกุล ครู" required>
-            <input name="position" class="form-control" placeholder="ตำแหน่ง" value="ครู" style="max-width:110px">
-            <button class="btn btn-warning"><i class="bi bi-plus"></i> เพิ่ม</button>
-          </div>
-        </form>
+        <p class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>เพิ่มครูได้ในแท็บ "กิจกรรมการแข่งขัน" ด้านบน</p>
         {% if teachers %}
         <div style="max-height:420px; overflow-y:auto">
           <ul class="list-group list-group-flush">

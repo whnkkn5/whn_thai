@@ -600,6 +600,80 @@ def add_coach(eid):
         db.close()
     return redirect(back)
 
+@app.route('/event/<int:eid>/participants/add-direct', methods=['POST'])
+@login_required
+def add_participant_direct(eid):
+    if session.get('role') != 'school':
+        return redirect(url_for('school_home'))
+    sid  = session.get('school_id')
+    name = request.form.get('student_name', '').strip()
+    if not name:
+        return redirect(url_for('school_home'))
+    db = get_db()
+    ev = db.execute('SELECT max_students FROM events WHERE id=%s', [eid]).fetchone()
+    cur_count = db.execute('''
+        SELECT COUNT(*) FROM participants p JOIN students s ON s.id=p.student_id
+        WHERE p.event_id=%s AND s.school_id=%s
+    ''', [eid, sid]).fetchone()[0]
+    if cur_count >= (ev['max_students'] if ev else 1):
+        flash(f'กิจกรรมนี้รับนักเรียนได้สูงสุด {ev["max_students"]} คนต่อโรงเรียน', 'warning')
+        db.close()
+        return redirect(url_for('school_home'))
+    existing = db.execute('SELECT id FROM students WHERE name=%s AND school_id=%s', [name, sid]).fetchone()
+    if existing:
+        student_id = existing['id']
+    else:
+        cur = db.execute('INSERT INTO students (name,school_id) VALUES (%s,%s) RETURNING id', [name, sid])
+        student_id = cur.fetchone()['id']
+        db.commit()
+    try:
+        db.execute('INSERT INTO participants (event_id,student_id) VALUES (%s,%s)', [eid, student_id])
+        db.commit()
+    except Exception:
+        db.rollback()
+        flash('นักเรียนคนนี้ลงทะเบียนในกิจกรรมนี้แล้ว', 'warning')
+    db.close()
+    return redirect(url_for('school_home'))
+
+@app.route('/event/<int:eid>/coaches/add-direct', methods=['POST'])
+@login_required
+def add_coach_direct(eid):
+    if session.get('role') != 'school':
+        return redirect(url_for('school_home'))
+    sid      = session.get('school_id')
+    name     = request.form.get('teacher_name', '').strip()
+    position = request.form.get('position', 'ครู').strip()
+    if not name:
+        return redirect(url_for('school_home'))
+    db = get_db()
+    ev = db.execute('SELECT max_coaches FROM events WHERE id=%s', [eid]).fetchone()
+    cur_count = db.execute('''
+        SELECT COUNT(*) FROM coaches c JOIN teachers t ON t.id=c.teacher_id
+        WHERE c.event_id=%s AND t.school_id=%s
+    ''', [eid, sid]).fetchone()[0]
+    if cur_count >= (ev['max_coaches'] if ev else 1):
+        flash(f'กิจกรรมนี้รับครูได้สูงสุด {ev["max_coaches"]} คนต่อโรงเรียน', 'warning')
+        db.close()
+        return redirect(url_for('school_home'))
+    existing = db.execute('SELECT id FROM teachers WHERE name=%s AND school_id=%s', [name, sid]).fetchone()
+    if existing:
+        teacher_id = existing['id']
+        db.execute('UPDATE teachers SET position=%s WHERE id=%s', [position, teacher_id])
+        db.commit()
+    else:
+        cur = db.execute('INSERT INTO teachers (name,school_id,position) VALUES (%s,%s,%s) RETURNING id',
+                         [name, sid, position])
+        teacher_id = cur.fetchone()['id']
+        db.commit()
+    try:
+        db.execute('INSERT INTO coaches (event_id,teacher_id) VALUES (%s,%s)', [eid, teacher_id])
+        db.commit()
+    except Exception:
+        db.rollback()
+        flash('ครูคนนี้ลงทะเบียนในกิจกรรมนี้แล้ว', 'warning')
+    db.close()
+    return redirect(url_for('school_home'))
+
 @app.route('/coaches/<int:cid>/delete', methods=['POST'])
 @login_required
 def delete_coach(cid):
