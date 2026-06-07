@@ -256,9 +256,38 @@ def school_home():
     school   = db.execute('SELECT * FROM schools WHERE id=?', [sid]).fetchone() if sid else None
     students = db.execute('SELECT * FROM students WHERE school_id=? ORDER BY name', [sid]).fetchall() if sid else []
     teachers = db.execute('SELECT * FROM teachers WHERE school_id=? ORDER BY name', [sid]).fetchall() if sid else []
+    events   = db.execute('SELECT * FROM events ORDER BY level, name').fetchall() if sid else []
+
+    parts_by_event   = {}
+    coaches_by_event = {}
+    if sid:
+        for p in db.execute('''
+            SELECT p.id, p.score, p.rank_pos, p.award, p.event_id,
+                   st.name as student_name, st.id as student_id, st.class_level
+            FROM participants p JOIN students st ON st.id=p.student_id
+            WHERE st.school_id=?
+            ORDER BY p.event_id, COALESCE(p.rank_pos,999), st.name
+        ''', [sid]).fetchall():
+            parts_by_event.setdefault(p['event_id'], []).append(p)
+
+        for c in db.execute('''
+            SELECT c.id, c.event_id, t.name as teacher_name, t.id as teacher_id, t.position
+            FROM coaches c JOIN teachers t ON t.id=c.teacher_id
+            WHERE t.school_id=?
+            ORDER BY c.event_id, t.name
+        ''', [sid]).fetchall():
+            coaches_by_event.setdefault(c['event_id'], []).append(c)
+
+    events_joined       = len(parts_by_event)
+    total_registrations = sum(len(v) for v in parts_by_event.values())
     db.close()
     return render_template('school_home.html', school=school,
-                           students=students, teachers=teachers)
+                           students=students, teachers=teachers,
+                           events=events,
+                           parts_by_event=parts_by_event,
+                           coaches_by_event=coaches_by_event,
+                           events_joined=events_joined,
+                           total_registrations=total_registrations)
 
 # ── Admin: User Management ────────────────────────────────
 
@@ -413,54 +442,84 @@ def event_detail(eid):
                            event_judges=event_judges, all_judges=all_judges)
 
 @app.route('/event/<int:eid>/participants/add', methods=['POST'])
-@admin_required
+@login_required
 def add_participant(eid):
     student_id = request.form.get('student_id')
+    is_school  = session.get('role') == 'school'
+    back       = url_for('school_home') if is_school else url_for('event_detail', eid=eid)
     if student_id:
         db = get_db()
+        if is_school:
+            st = db.execute('SELECT school_id FROM students WHERE id=?', [student_id]).fetchone()
+            if not st or st['school_id'] != session.get('school_id'):
+                flash('ไม่มีสิทธิ์ลงทะเบียนนักเรียนของโรงเรียนอื่น', 'danger')
+                db.close()
+                return redirect(back)
         try:
             db.execute('INSERT INTO participants (event_id,student_id) VALUES (?,?)', [eid, student_id])
             db.commit()
         except Exception:
             flash('นักเรียนคนนี้ลงทะเบียนในกิจกรรมนี้แล้ว', 'warning')
         db.close()
-    return redirect(url_for('event_detail', eid=eid))
+    return redirect(back)
 
 @app.route('/participants/<int:pid>/delete', methods=['POST'])
-@admin_required
+@login_required
 def delete_participant(pid):
-    db = get_db()
-    row = db.execute('SELECT event_id FROM participants WHERE id=?', [pid]).fetchone()
-    eid = row['event_id']
+    db  = get_db()
+    row = db.execute('''SELECT p.event_id, st.school_id
+                        FROM participants p JOIN students st ON st.id=p.student_id
+                        WHERE p.id=?''', [pid]).fetchone()
+    eid       = row['event_id']
+    is_school = session.get('role') == 'school'
+    if is_school and row['school_id'] != session.get('school_id'):
+        flash('ไม่มีสิทธิ์', 'danger')
+        db.close()
+        return redirect(url_for('school_home'))
     db.execute('DELETE FROM participants WHERE id=?', [pid])
     db.commit()
     db.close()
-    return redirect(url_for('event_detail', eid=eid))
+    return redirect(url_for('school_home') if is_school else url_for('event_detail', eid=eid))
 
 @app.route('/event/<int:eid>/coaches/add', methods=['POST'])
-@admin_required
+@login_required
 def add_coach(eid):
     teacher_id = request.form.get('teacher_id')
+    is_school  = session.get('role') == 'school'
+    back       = url_for('school_home') if is_school else url_for('event_detail', eid=eid)
     if teacher_id:
         db = get_db()
+        if is_school:
+            t = db.execute('SELECT school_id FROM teachers WHERE id=?', [teacher_id]).fetchone()
+            if not t or t['school_id'] != session.get('school_id'):
+                flash('ไม่มีสิทธิ์', 'danger')
+                db.close()
+                return redirect(back)
         try:
             db.execute('INSERT INTO coaches (event_id,teacher_id) VALUES (?,?)', [eid, teacher_id])
             db.commit()
         except Exception:
             flash('ครูคนนี้ลงทะเบียนในกิจกรรมนี้แล้ว', 'warning')
         db.close()
-    return redirect(url_for('event_detail', eid=eid))
+    return redirect(back)
 
 @app.route('/coaches/<int:cid>/delete', methods=['POST'])
-@admin_required
+@login_required
 def delete_coach(cid):
-    db = get_db()
-    row = db.execute('SELECT event_id FROM coaches WHERE id=?', [cid]).fetchone()
-    eid = row['event_id']
+    db  = get_db()
+    row = db.execute('''SELECT c.event_id, t.school_id
+                        FROM coaches c JOIN teachers t ON t.id=c.teacher_id
+                        WHERE c.id=?''', [cid]).fetchone()
+    eid       = row['event_id']
+    is_school = session.get('role') == 'school'
+    if is_school and row['school_id'] != session.get('school_id'):
+        flash('ไม่มีสิทธิ์', 'danger')
+        db.close()
+        return redirect(url_for('school_home'))
     db.execute('DELETE FROM coaches WHERE id=?', [cid])
     db.commit()
     db.close()
-    return redirect(url_for('event_detail', eid=eid))
+    return redirect(url_for('school_home') if is_school else url_for('event_detail', eid=eid))
 
 @app.route('/event/<int:eid>/judges/add', methods=['POST'])
 @admin_required

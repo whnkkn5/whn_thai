@@ -19,6 +19,7 @@
   </a>
 </div>
 
+<!-- Stats -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
     <div class="card text-center py-3">
@@ -31,14 +32,213 @@
     <div class="card text-center py-3">
       <div style="font-size:2rem">👩‍🏫</div>
       <div class="fs-2 fw-bold text-warning">{{ teachers|length }}</div>
-      <div class="text-muted small">ครู</div>
+      <div class="text-muted small">ครู/ผู้ฝึกสอน</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div style="font-size:2rem">🏆</div>
+      <div class="fs-2 fw-bold text-success">{{ events_joined }}</div>
+      <div class="text-muted small">กิจกรรมที่เข้าร่วม</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div style="font-size:2rem">📋</div>
+      <div class="fs-2 fw-bold text-info">{{ total_registrations }}</div>
+      <div class="text-muted small">รายการส่งแข่ง</div>
     </div>
   </div>
 </div>
 
-<div class="row g-4">
-  <!-- Students -->
-  <div class="col-md-6">
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="schoolTab" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="events-tab"
+            data-bs-toggle="tab" data-bs-target="#events-pane" type="button">
+      <i class="bi bi-trophy me-1"></i>กิจกรรมการแข่งขัน
+      {% if events_joined > 0 %}<span class="badge bg-success ms-1">{{ events_joined }}</span>{% endif %}
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="students-tab"
+            data-bs-toggle="tab" data-bs-target="#students-pane" type="button">
+      <i class="bi bi-person me-1"></i>นักเรียน
+      <span class="badge bg-primary ms-1">{{ students|length }}</span>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="teachers-tab"
+            data-bs-toggle="tab" data-bs-target="#teachers-pane" type="button">
+      <i class="bi bi-person-badge me-1"></i>ครู/ผู้ฝึกสอน
+      <span class="badge bg-warning text-dark ms-1">{{ teachers|length }}</span>
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content" id="schoolTabContent">
+
+  {# ══ Events Tab ══ #}
+  <div class="tab-pane fade show active" id="events-pane" role="tabpanel">
+    {% if not events %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-calendar-x" style="font-size:2.5rem"></i>
+      <p class="mt-2">ยังไม่มีกิจกรรมการแข่งขัน — รอ Admin สร้างกิจกรรม</p>
+    </div>
+    {% else %}
+    <div class="accordion" id="eventsAccordion">
+      {% for event in events %}
+      {% set e_parts        = parts_by_event.get(event.id, []) %}
+      {% set e_coaches      = coaches_by_event.get(event.id, []) %}
+      {% set reg_st_ids     = e_parts   | map(attribute='student_id') | list %}
+      {% set reg_tc_ids     = e_coaches | map(attribute='teacher_id') | list %}
+      {% set is_registered  = (e_parts | length > 0) or (e_coaches | length > 0) %}
+      <div class="accordion-item mb-2 border rounded shadow-sm">
+        <h2 class="accordion-header">
+          <button class="accordion-button {{ '' if is_registered else 'collapsed' }}"
+                  type="button" data-bs-toggle="collapse"
+                  data-bs-target="#evCol{{ event.id }}"
+                  aria-expanded="{{ 'true' if is_registered else 'false' }}">
+            <div class="d-flex align-items-center gap-2 w-100 me-2">
+              <span class="fw-semibold">{{ event.name }}</span>
+              <span class="badge bg-secondary">{{ event.level }}</span>
+              <div class="ms-auto d-flex gap-1">
+                {% if e_parts %}
+                <span class="badge bg-info text-dark">👨‍🎓 {{ e_parts|length }}</span>
+                {% endif %}
+                {% if e_coaches %}
+                <span class="badge bg-warning text-dark">👩‍🏫 {{ e_coaches|length }}</span>
+                {% endif %}
+                {% if not is_registered %}
+                <span class="badge bg-light text-muted border">ยังไม่ได้ลงทะเบียน</span>
+                {% endif %}
+              </div>
+            </div>
+          </button>
+        </h2>
+        <div id="evCol{{ event.id }}"
+             class="accordion-collapse collapse {{ 'show' if is_registered else '' }}">
+          <div class="accordion-body pt-2">
+            <div class="row g-3">
+
+              {# — Students column — #}
+              <div class="col-md-6">
+                <div class="card border-0 bg-light h-100">
+                  <div class="card-header bg-info bg-opacity-10 border-0 py-2">
+                    <i class="bi bi-person me-1"></i><strong>นักเรียน</strong>
+                    <span class="badge bg-info ms-1">{{ e_parts|length }}</span>
+                  </div>
+                  <div class="card-body py-2">
+                    {% if e_parts %}
+                    <ul class="list-group list-group-flush mb-2">
+                      {% for p in e_parts %}
+                      <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0 py-1">
+                        <div>
+                          <span class="fw-semibold small">{{ p.student_name }}</span>
+                          {% if p.class_level %}<span class="text-muted small"> ({{ p.class_level }})</span>{% endif %}
+                          {% if p.award %}
+                          <br><span class="award-badge award-{{ p.award | award_css }}">{{ p.award }}</span>
+                          {% elif p.score != none %}
+                          <br><span class="text-muted small">คะแนน: {{ p.score }}</span>
+                          {% endif %}
+                        </div>
+                        <form method="POST" action="{{ url_for('delete_participant', pid=p.id) }}" class="d-inline">
+                          <button class="btn btn-sm btn-outline-danger py-0 px-1"
+                                  onclick="return confirm('ถอนชื่อ {{ p.student_name }}?')">
+                            <i class="bi bi-x"></i>
+                          </button>
+                        </form>
+                      </li>
+                      {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% set ns_st = namespace(has_avail=false) %}
+                    {% for st in students %}{% if st.id not in reg_st_ids %}{% set ns_st.has_avail = true %}{% endif %}{% endfor %}
+                    {% if not students %}
+                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>เพิ่มนักเรียนในแท็บ "นักเรียน" ก่อน</p>
+                    {% elif ns_st.has_avail %}
+                    <form method="POST" action="{{ url_for('add_participant', eid=event.id) }}" class="d-flex gap-1">
+                      <select name="student_id" class="form-select form-select-sm" required>
+                        <option value="">— เลือกนักเรียน —</option>
+                        {% for st in students %}
+                        {% if st.id not in reg_st_ids %}
+                        <option value="{{ st.id }}">{{ st.name }}{% if st.class_level %} ({{ st.class_level }}){% endif %}</option>
+                        {% endif %}
+                        {% endfor %}
+                      </select>
+                      <button class="btn btn-sm btn-info text-white" style="white-space:nowrap">
+                        <i class="bi bi-plus"></i>
+                      </button>
+                    </form>
+                    {% else %}
+                    <p class="text-muted small mb-0">ลงทะเบียนนักเรียนครบทุกคนแล้ว</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              {# — Coaches column — #}
+              <div class="col-md-6">
+                <div class="card border-0 bg-light h-100">
+                  <div class="card-header bg-warning bg-opacity-10 border-0 py-2">
+                    <i class="bi bi-person-badge me-1"></i><strong>ครูผู้ฝึกสอน</strong>
+                    <span class="badge bg-warning text-dark ms-1">{{ e_coaches|length }}</span>
+                  </div>
+                  <div class="card-body py-2">
+                    {% if e_coaches %}
+                    <ul class="list-group list-group-flush mb-2">
+                      {% for c in e_coaches %}
+                      <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0 py-1">
+                        <div>
+                          <span class="fw-semibold small">{{ c.teacher_name }}</span>
+                          <span class="text-muted small"> ({{ c.position }})</span>
+                        </div>
+                        <form method="POST" action="{{ url_for('delete_coach', cid=c.id) }}" class="d-inline">
+                          <button class="btn btn-sm btn-outline-danger py-0 px-1"
+                                  onclick="return confirm('ถอน {{ c.teacher_name }}?')">
+                            <i class="bi bi-x"></i>
+                          </button>
+                        </form>
+                      </li>
+                      {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% set ns_tc = namespace(has_avail=false) %}
+                    {% for t in teachers %}{% if t.id not in reg_tc_ids %}{% set ns_tc.has_avail = true %}{% endif %}{% endfor %}
+                    {% if not teachers %}
+                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>เพิ่มครูในแท็บ "ครู" ก่อน</p>
+                    {% elif ns_tc.has_avail %}
+                    <form method="POST" action="{{ url_for('add_coach', eid=event.id) }}" class="d-flex gap-1">
+                      <select name="teacher_id" class="form-select form-select-sm" required>
+                        <option value="">— เลือกครู —</option>
+                        {% for t in teachers %}
+                        {% if t.id not in reg_tc_ids %}
+                        <option value="{{ t.id }}">{{ t.name }} ({{ t.position }})</option>
+                        {% endif %}
+                        {% endfor %}
+                      </select>
+                      <button class="btn btn-sm btn-warning" style="white-space:nowrap">
+                        <i class="bi bi-plus"></i>
+                      </button>
+                    </form>
+                    {% else %}
+                    <p class="text-muted small mb-0">ลงทะเบียนครูครบทุกคนแล้ว</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  {# ══ Students Tab ══ #}
+  <div class="tab-pane fade" id="students-pane" role="tabpanel">
     <div class="card">
       <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
         <span><i class="bi bi-person me-1"></i>นักเรียน</span>
@@ -48,23 +248,21 @@
         <form method="POST" action="{{ url_for('add_student', sid=school.id) }}" class="mb-3">
           <div class="input-group">
             <input name="name" class="form-control" placeholder="ชื่อ-สกุล นักเรียน" required>
-            <input name="class_level" class="form-control" placeholder="ชั้น" style="max-width:100px">
+            <input name="class_level" class="form-control" placeholder="ชั้น" style="max-width:110px">
             <button class="btn btn-info text-white"><i class="bi bi-plus"></i> เพิ่ม</button>
           </div>
         </form>
         {% if students %}
-        <div style="max-height:300px; overflow-y:auto">
+        <div style="max-height:420px; overflow-y:auto">
           <ul class="list-group list-group-flush">
             {% for st in students %}
             <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
               <div>
                 <span class="fw-semibold">{{ st.name }}</span>
-                {% if st.class_level %}
-                <span class="badge bg-light text-muted ms-1">{{ st.class_level }}</span>
-                {% endif %}
+                {% if st.class_level %}<span class="badge bg-light text-muted ms-1">{{ st.class_level }}</span>{% endif %}
               </div>
               <form method="POST" action="{{ url_for('delete_student', stid=st.id) }}"
-                    class="d-inline" onsubmit="return confirm('ลบ {{ st.name }} ?')">
+                    class="d-inline" onsubmit="return confirm('ลบ {{ st.name }}?')">
                 <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-x"></i></button>
               </form>
             </li>
@@ -78,8 +276,8 @@
     </div>
   </div>
 
-  <!-- Teachers -->
-  <div class="col-md-6">
+  {# ══ Teachers Tab ══ #}
+  <div class="tab-pane fade" id="teachers-pane" role="tabpanel">
     <div class="card">
       <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
         <span><i class="bi bi-person-badge me-1"></i>ครู / ผู้ฝึกสอน</span>
@@ -89,12 +287,12 @@
         <form method="POST" action="{{ url_for('add_teacher', sid=school.id) }}" class="mb-3">
           <div class="input-group">
             <input name="name" class="form-control" placeholder="ชื่อ-สกุล ครู" required>
-            <input name="position" class="form-control" placeholder="ตำแหน่ง" value="ครู" style="max-width:100px">
+            <input name="position" class="form-control" placeholder="ตำแหน่ง" value="ครู" style="max-width:110px">
             <button class="btn btn-warning"><i class="bi bi-plus"></i> เพิ่ม</button>
           </div>
         </form>
         {% if teachers %}
-        <div style="max-height:300px; overflow-y:auto">
+        <div style="max-height:420px; overflow-y:auto">
           <ul class="list-group list-group-flush">
             {% for t in teachers %}
             <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
@@ -103,7 +301,7 @@
                 <span class="text-muted small ms-1">({{ t.position }})</span>
               </div>
               <form method="POST" action="{{ url_for('delete_teacher', tid=t.id) }}"
-                    class="d-inline" onsubmit="return confirm('ลบ {{ t.name }} ?')">
+                    class="d-inline" onsubmit="return confirm('ลบ {{ t.name }}?')">
                 <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-x"></i></button>
               </form>
             </li>
@@ -116,7 +314,7 @@
       </div>
     </div>
   </div>
-</div>
 
+</div>
 {% endif %}
 {% endblock %}
