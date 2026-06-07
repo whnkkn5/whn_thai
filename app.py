@@ -833,6 +833,31 @@ def judge_certificates():
         active_templates=active_templates,
         thai_date=format_thai_date(settings.get('competition_date','')))
 
+@app.route('/results')
+@login_required
+def all_results():
+    db      = get_db()
+    events  = db.execute('SELECT * FROM events ORDER BY level, name').fetchall()
+    parts   = db.execute('''
+        SELECT p.event_id, p.rank_pos, p.award, p.score,
+               st.name as student_name, st.class_level,
+               s.name  as school_name,  s.id as school_id
+        FROM participants p
+        JOIN students st ON st.id = p.student_id
+        JOIN schools  s  ON s.id  = st.school_id
+        WHERE p.award IS NOT NULL
+        ORDER BY p.event_id, COALESCE(p.rank_pos, 999), st.name
+    ''').fetchall()
+    db.close()
+    results_by_event = {}
+    for p in parts:
+        results_by_event.setdefault(p['event_id'], []).append(p)
+    my_school_id = session.get('school_id') if session.get('role') == 'school' else None
+    return render_template('all_results.html',
+        events=events,
+        results_by_event=results_by_event,
+        my_school_id=my_school_id)
+
 # ── API ───────────────────────────────────────────────────
 
 @app.get('/api/schools/<int:sid>/students')

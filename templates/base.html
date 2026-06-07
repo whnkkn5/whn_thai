@@ -36,6 +36,8 @@
       <i class="bi bi-person-badge"></i> คณะกรรมการ</a>
 
     <div class="nav-section">ผลการแข่งขัน</div>
+    <a href="{{ url_for('all_results') }}" class="{{ 'active' if request.endpoint=='all_results' }}">
+      <i class="bi bi-bar-chart-line"></i> ผลการแข่งขันทุกกิจกรรม</a>
     <a href="{{ url_for('certificates') }}" class="{{ 'active' if request.endpoint=='certificates' }}">
       <i class="bi bi-award"></i> เกียรติบัตรนักเรียน/ครู</a>
     <a href="{{ url_for('judge_certificates') }}" class="{{ 'active' if request.endpoint=='judge_certificates' }}">
@@ -52,6 +54,9 @@
     <div class="nav-section">โรงเรียนของฉัน</div>
     <a href="{{ url_for('school_home') }}" class="{{ 'active' if request.endpoint=='school_home' }}">
       <i class="bi bi-house"></i> หน้าหลัก</a>
+    <div class="nav-section">ผลการแข่งขัน</div>
+    <a href="{{ url_for('all_results') }}" class="{{ 'active' if request.endpoint=='all_results' }}">
+      <i class="bi bi-bar-chart-line"></i> ผลการแข่งขันทุกกิจกรรม</a>
     <a href="{{ url_for('certificates') }}" class="{{ 'active' if request.endpoint=='certificates' }}">
       <i class="bi bi-award"></i> พิมพ์เกียรติบัตร</a>
     {% endif %}

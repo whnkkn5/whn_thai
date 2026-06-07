@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}ผลการแข่งขันทุกกิจกรรม{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="page-title mb-0"><i class="bi bi-bar-chart-line me-2"></i>ผลการแข่งขันทุกกิจกรรม</h1>
+  <span class="text-muted small">{{ events|length }} กิจกรรม</span>
+</div>
+
+{% if not events %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-calendar-x" style="font-size:3rem"></i>
+  <h5 class="mt-3">ยังไม่มีกิจกรรมการแข่งขัน</h5>
+</div>
+{% else %}
+
+{# group events by level #}
+{% set levels = events | map(attribute='level') | unique | list %}
+{% for level in levels %}
+{% set level_events = events | selectattr('level', 'equalto', level) | list %}
+
+<div class="mb-1">
+  <h5 class="text-muted fw-semibold" style="font-size:.85rem; text-transform:uppercase; letter-spacing:.06em;">
+    <i class="bi bi-layers me-1"></i>ระดับ{{ level }}
+  </h5>
+</div>
+
+<div class="row g-3 mb-4">
+{% for event in level_events %}
+{% set e_parts = results_by_event.get(event.id, []) %}
+<div class="col-12">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center"
+         style="background:#f8f9fa; cursor:pointer;"
+         data-bs-toggle="collapse" data-bs-target="#ev{{ event.id }}">
+      <span class="fw-semibold">
+        <i class="bi bi-trophy me-2 text-warning"></i>{{ event.name }}
+        <span class="badge bg-secondary ms-1">{{ event.level }}</span>
+      </span>
+      <div class="d-flex align-items-center gap-2">
+        {% if e_parts %}
+        <span class="badge bg-success">{{ e_parts|length }} รางวัล</span>
+        {% else %}
+        <span class="badge bg-light text-muted border">ยังไม่มีผล</span>
+        {% endif %}
+        <i class="bi bi-chevron-down text-muted small"></i>
+      </div>
+    </div>
+    <div id="ev{{ event.id }}" class="collapse show">
+      <div class="card-body p-0">
+        {% if not e_parts %}
+        <div class="text-center py-4 text-muted small">
+          <i class="bi bi-clock me-1"></i>รอกรอกคะแนนและคำนวณรางวัล
+        </div>
+        {% else %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th style="width:50px" class="text-center">อันดับ</th>
+                <th>ชื่อ-สกุล</th>
+                <th>โรงเรียน</th>
+                <th>รางวัล</th>
+                <th class="text-end" style="width:80px">คะแนน</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in e_parts %}
+              <tr class="{{ 'table-warning' if my_school_id and p.school_id == my_school_id else '' }}">
+                <td class="text-center fw-bold">
+                  {% if p.rank_pos == 1 %}🥇
+                  {% elif p.rank_pos == 2 %}🥈
+                  {% elif p.rank_pos == 3 %}🥉
+                  {% elif p.rank_pos %}{{ p.rank_pos }}
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  <span class="fw-semibold">{{ p.student_name }}</span>
+                  {% if p.class_level %}<span class="text-muted small ms-1">({{ p.class_level }})</span>{% endif %}
+                  {% if my_school_id and p.school_id == my_school_id %}
+                  <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem">โรงเรียนของฉัน</span>
+                  {% endif %}
+                </td>
+                <td class="text-muted small">{{ p.school_name }}</td>
+                <td>
+                  <span class="award-badge award-{{ p.award | award_css }}">{{ p.award }}</span>
+                </td>
+                <td class="text-end text-muted small">
+                  {{ p.score if p.score is not none else '—' }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+</div>
+{% endfor %}
+
+{% endif %}
+{% endblock %}
