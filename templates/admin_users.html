@@ -77,7 +77,7 @@
                 {% endif %}
               </td>
               <td>{{ u.school_name or '—' }}</td>
-              <td class="text-muted small">{{ u.created_at[:10] if u.created_at else '—' }}</td>
+              <td class="text-muted small">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
               <td class="text-end">
                 <!-- Reset password -->
                 <button class="btn btn-sm btn-outline-secondary me-1"
