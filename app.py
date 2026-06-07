@@ -1,7 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 import sqlite3
 import os
 from datetime import datetime
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'competition-2024')
@@ -32,6 +34,14 @@ def init_db():
         INSERT OR IGNORE INTO settings VALUES ('signer2_name', '');
         INSERT OR IGNORE INTO settings VALUES ('signer2_position', '');
 
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'school',
+            school_id INTEGER REFERENCES schools(id) ON DELETE SET NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -80,8 +90,18 @@ def init_db():
             UNIQUE(event_id, judge_id)
         );
     ''')
+
+    # Create default admin if none exists
+    admin = db.execute("SELECT 1 FROM users WHERE role='admin'").fetchone()
+    if not admin:
+        db.execute("INSERT INTO users (username, password_hash, role) VALUES (?,?,?)",
+                   ['admin', generate_password_hash('admin1234', method='pbkdf2:sha256'), 'admin'])
+        print('👤 สร้าง admin เริ่มต้น: username=admin  password=admin1234')
+
     db.commit()
     db.close()
+
+# ── Helpers ──────────────────────────────────────────────
 
 def get_settings():
     db = get_db()
@@ -99,31 +119,20 @@ def format_thai_date(date_str):
         return date_str
 
 def award_css(award):
-    if not award:
-        return 'participate'
-    if 'ชนะเลิศ' in award:
-        return 'gold-champion'
-    if 'รองชนะเลิศอันดับ 1' in award:
-        return 'gold-runner1'
-    if 'รองชนะเลิศอันดับ 2' in award:
-        return 'gold-runner2'
-    if 'ทอง' in award:
-        return 'gold'
-    if 'เงิน' in award:
-        return 'silver'
-    if 'ทองแดง' in award:
-        return 'bronze'
+    if not award: return 'participate'
+    if 'ชนะเลิศ' in award: return 'gold-champion'
+    if 'รองชนะเลิศอันดับ 1' in award: return 'gold-runner1'
+    if 'รองชนะเลิศอันดับ 2' in award: return 'gold-runner2'
+    if 'ทอง' in award: return 'gold'
+    if 'เงิน' in award: return 'silver'
+    if 'ทองแดง' in award: return 'bronze'
     return 'participate'
 
 def award_icon(award):
-    if not award:
-        return '🎖'
-    if 'ทอง' in award:
-        return '🥇'
-    if 'เงิน' in award:
-        return '🥈'
-    if 'ทองแดง' in award:
-        return '🥉'
+    if not award: return '🎖'
+    if 'ทอง' in award: return '🥇'
+    if 'เงิน' in award: return '🥈'
+    if 'ทองแดง' in award: return '🥉'
     return '🎖'
 
 app.jinja_env.filters['award_css'] = award_css
@@ -139,28 +148,75 @@ def calculate_awards(event_id):
     for i, row in enumerate(rows):
         rank = i + 1
         score = row['score']
-        if rank == 1 and score >= 80:
-            award = 'เหรียญทอง ชนะเลิศ'
-        elif rank == 2 and score >= 80:
-            award = 'เหรียญทอง รองชนะเลิศอันดับ 1'
-        elif rank == 3 and score >= 80:
-            award = 'เหรียญทอง รองชนะเลิศอันดับ 2'
-        elif score >= 80:
-            award = 'เหรียญทอง'
-        elif score >= 70:
-            award = 'เหรียญเงิน'
-        elif score >= 60:
-            award = 'เหรียญทองแดง'
-        else:
-            award = 'เข้าร่วม'
+        if rank == 1 and score >= 80:   award = 'เหรียญทอง ชนะเลิศ'
+        elif rank == 2 and score >= 80: award = 'เหรียญทอง รองชนะเลิศอันดับ 1'
+        elif rank == 3 and score >= 80: award = 'เหรียญทอง รองชนะเลิศอันดับ 2'
+        elif score >= 80: award = 'เหรียญทอง'
+        elif score >= 70: award = 'เหรียญเงิน'
+        elif score >= 60: award = 'เหรียญทองแดง'
+        else:             award = 'เข้าร่วม'
         db.execute('UPDATE participants SET rank_pos=?, award=? WHERE id=?', [rank, award, row['id']])
     db.commit()
     db.close()
 
-# ── Routes ──────────────────────────────────────────────────────────────
+# ── Auth decorators ───────────────────────────────────────
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('กรุณาเข้าสู่ระบบ', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('กรุณาเข้าสู่ระบบ', 'warning')
+            return redirect(url_for('login'))
+        if session.get('role') != 'admin':
+            flash('ไม่มีสิทธิ์เข้าถึงหน้านี้', 'danger')
+            return redirect(url_for('school_home'))
+        return f(*args, **kwargs)
+    return decorated
+
+# ── Auth routes ───────────────────────────────────────────
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        password = request.form['password']
+        db = get_db()
+        user = db.execute('SELECT * FROM users WHERE username=?', [username]).fetchone()
+        db.close()
+        if user and check_password_hash(user['password_hash'], password):
+            session['user_id']   = user['id']
+            session['username']  = user['username']
+            session['role']      = user['role']
+            session['school_id'] = user['school_id']
+            flash(f'ยินดีต้อนรับ {user["username"]}', 'success')
+            return redirect(url_for('index'))
+        flash('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'danger')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('ออกจากระบบแล้ว', 'info')
+    return redirect(url_for('login'))
+
+# ── Dashboard ─────────────────────────────────────────────
 
 @app.route('/')
+@login_required
 def index():
+    if session.get('role') == 'school':
+        return redirect(url_for('school_home'))
     db = get_db()
     events = db.execute('''
         SELECT e.*,
@@ -170,13 +226,101 @@ def index():
         GROUP BY e.id ORDER BY e.level, e.name
     ''').fetchall()
     school_count = db.execute('SELECT COUNT(*) FROM schools').fetchone()[0]
-    judge_count = db.execute('SELECT COUNT(*) FROM judges').fetchone()[0]
+    judge_count  = db.execute('SELECT COUNT(*) FROM judges').fetchone()[0]
+    user_count   = db.execute('SELECT COUNT(*) FROM users').fetchone()[0]
     settings = get_settings()
     db.close()
     return render_template('index.html', events=events, settings=settings,
-                           school_count=school_count, judge_count=judge_count)
+                           school_count=school_count, judge_count=judge_count,
+                           user_count=user_count)
+
+# ── School home (role=school) ─────────────────────────────
+
+@app.route('/my-school')
+@login_required
+def school_home():
+    if session.get('role') == 'admin':
+        return redirect(url_for('index'))
+    sid = session.get('school_id')
+    db = get_db()
+    school   = db.execute('SELECT * FROM schools WHERE id=?', [sid]).fetchone() if sid else None
+    students = db.execute('SELECT * FROM students WHERE school_id=? ORDER BY name', [sid]).fetchall() if sid else []
+    teachers = db.execute('SELECT * FROM teachers WHERE school_id=? ORDER BY name', [sid]).fetchall() if sid else []
+    db.close()
+    return render_template('school_home.html', school=school,
+                           students=students, teachers=teachers)
+
+# ── Admin: User Management ────────────────────────────────
+
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    db = get_db()
+    users   = db.execute('''
+        SELECT u.*, s.name as school_name
+        FROM users u LEFT JOIN schools s ON s.id=u.school_id
+        ORDER BY u.role DESC, u.username
+    ''').fetchall()
+    schools = db.execute('SELECT * FROM schools ORDER BY name').fetchall()
+    db.close()
+    return render_template('admin_users.html', users=users, schools=schools)
+
+@app.route('/admin/users/add', methods=['POST'])
+@admin_required
+def admin_add_user():
+    username  = request.form['username'].strip()
+    password  = request.form['password'].strip()
+    role      = request.form['role']
+    school_id = request.form.get('school_id') or None
+    if not username or not password:
+        flash('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน', 'warning')
+        return redirect(url_for('admin_users'))
+    if role == 'school' and not school_id:
+        flash('ผู้ใช้งานโรงเรียนต้องเลือกโรงเรียน', 'warning')
+        return redirect(url_for('admin_users'))
+    db = get_db()
+    try:
+        db.execute('INSERT INTO users (username, password_hash, role, school_id) VALUES (?,?,?,?)',
+                   [username, generate_password_hash(password, method='pbkdf2:sha256'), role, school_id])
+        db.commit()
+        flash(f'เพิ่มผู้ใช้ "{username}" แล้ว', 'success')
+    except Exception:
+        flash('ชื่อผู้ใช้นี้มีอยู่แล้ว', 'warning')
+    db.close()
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/users/<int:uid>/delete', methods=['POST'])
+@admin_required
+def admin_delete_user(uid):
+    if uid == session['user_id']:
+        flash('ไม่สามารถลบบัญชีตัวเองได้', 'warning')
+        return redirect(url_for('admin_users'))
+    db = get_db()
+    db.execute('DELETE FROM users WHERE id=?', [uid])
+    db.commit()
+    db.close()
+    flash('ลบผู้ใช้แล้ว', 'info')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/users/<int:uid>/reset-password', methods=['POST'])
+@admin_required
+def admin_reset_password(uid):
+    new_pass = request.form['new_password'].strip()
+    if not new_pass:
+        flash('กรุณากรอกรหัสผ่านใหม่', 'warning')
+        return redirect(url_for('admin_users'))
+    db = get_db()
+    db.execute('UPDATE users SET password_hash=? WHERE id=?',
+               [generate_password_hash(new_pass, method='pbkdf2:sha256'), uid])
+    db.commit()
+    db.close()
+    flash('เปลี่ยนรหัสผ่านแล้ว', 'success')
+    return redirect(url_for('admin_users'))
+
+# ── Settings ──────────────────────────────────────────────
 
 @app.route('/settings', methods=['GET', 'POST'])
+@admin_required
 def settings_page():
     if request.method == 'POST':
         db = get_db()
@@ -190,13 +334,14 @@ def settings_page():
         return redirect(url_for('settings_page'))
     return render_template('settings.html', s=get_settings())
 
-# ── Events ──────────────────────────────────────────────────────────────
+# ── Events ────────────────────────────────────────────────
 
 @app.route('/events', methods=['GET', 'POST'])
+@admin_required
 def events():
     db = get_db()
     if request.method == 'POST':
-        name = request.form['name'].strip()
+        name  = request.form['name'].strip()
         level = request.form['level'].strip()
         if name and level:
             db.execute('INSERT INTO events (name,level) VALUES (?,?)', [name, level])
@@ -212,6 +357,7 @@ def events():
     return render_template('events.html', events=rows)
 
 @app.route('/events/<int:eid>/delete', methods=['POST'])
+@admin_required
 def delete_event(eid):
     db = get_db()
     db.execute('DELETE FROM events WHERE id=?', [eid])
@@ -221,6 +367,7 @@ def delete_event(eid):
     return redirect(url_for('events'))
 
 @app.route('/event/<int:eid>')
+@admin_required
 def event_detail(eid):
     db = get_db()
     event = db.execute('SELECT * FROM events WHERE id=?', [eid]).fetchone()
@@ -234,14 +381,14 @@ def event_detail(eid):
                s.name as school_name, s.id as school_id
         FROM participants p
         JOIN students st ON st.id=p.student_id
-        JOIN schools s ON s.id=st.school_id
+        JOIN schools  s  ON s.id=st.school_id
         WHERE p.event_id=? ORDER BY COALESCE(p.rank_pos,999), st.name
     ''', [eid]).fetchall()
     coaches = db.execute('''
         SELECT c.id, t.name as teacher_name, t.position, s.name as school_name
         FROM coaches c
         JOIN teachers t ON t.id=c.teacher_id
-        JOIN schools s ON s.id=t.school_id
+        JOIN schools  s ON s.id=t.school_id
         WHERE c.event_id=? ORDER BY t.name
     ''', [eid]).fetchall()
     event_judges = db.execute('''
@@ -256,13 +403,13 @@ def event_detail(eid):
                            event_judges=event_judges, all_judges=all_judges)
 
 @app.route('/event/<int:eid>/participants/add', methods=['POST'])
+@admin_required
 def add_participant(eid):
     student_id = request.form.get('student_id')
     if student_id:
         db = get_db()
         try:
-            db.execute('INSERT INTO participants (event_id,student_id) VALUES (?,?)',
-                       [eid, student_id])
+            db.execute('INSERT INTO participants (event_id,student_id) VALUES (?,?)', [eid, student_id])
             db.commit()
         except Exception:
             flash('นักเรียนคนนี้ลงทะเบียนในกิจกรรมนี้แล้ว', 'warning')
@@ -270,6 +417,7 @@ def add_participant(eid):
     return redirect(url_for('event_detail', eid=eid))
 
 @app.route('/participants/<int:pid>/delete', methods=['POST'])
+@admin_required
 def delete_participant(pid):
     db = get_db()
     row = db.execute('SELECT event_id FROM participants WHERE id=?', [pid]).fetchone()
@@ -280,13 +428,13 @@ def delete_participant(pid):
     return redirect(url_for('event_detail', eid=eid))
 
 @app.route('/event/<int:eid>/coaches/add', methods=['POST'])
+@admin_required
 def add_coach(eid):
     teacher_id = request.form.get('teacher_id')
     if teacher_id:
         db = get_db()
         try:
-            db.execute('INSERT INTO coaches (event_id,teacher_id) VALUES (?,?)',
-                       [eid, teacher_id])
+            db.execute('INSERT INTO coaches (event_id,teacher_id) VALUES (?,?)', [eid, teacher_id])
             db.commit()
         except Exception:
             flash('ครูคนนี้ลงทะเบียนในกิจกรรมนี้แล้ว', 'warning')
@@ -294,6 +442,7 @@ def add_coach(eid):
     return redirect(url_for('event_detail', eid=eid))
 
 @app.route('/coaches/<int:cid>/delete', methods=['POST'])
+@admin_required
 def delete_coach(cid):
     db = get_db()
     row = db.execute('SELECT event_id FROM coaches WHERE id=?', [cid]).fetchone()
@@ -304,13 +453,13 @@ def delete_coach(cid):
     return redirect(url_for('event_detail', eid=eid))
 
 @app.route('/event/<int:eid>/judges/add', methods=['POST'])
+@admin_required
 def add_event_judge(eid):
     judge_id = request.form.get('judge_id')
     if judge_id:
         db = get_db()
         try:
-            db.execute('INSERT INTO event_judges (event_id,judge_id) VALUES (?,?)',
-                       [eid, judge_id])
+            db.execute('INSERT INTO event_judges (event_id,judge_id) VALUES (?,?)', [eid, judge_id])
             db.commit()
         except Exception:
             pass
@@ -318,6 +467,7 @@ def add_event_judge(eid):
     return redirect(url_for('event_detail', eid=eid))
 
 @app.route('/event_judges/<int:ejid>/delete', methods=['POST'])
+@admin_required
 def delete_event_judge(ejid):
     db = get_db()
     row = db.execute('SELECT event_id FROM event_judges WHERE id=?', [ejid]).fetchone()
@@ -327,9 +477,10 @@ def delete_event_judge(ejid):
     db.close()
     return redirect(url_for('event_detail', eid=eid))
 
-# ── Scores ──────────────────────────────────────────────────────────────
+# ── Scores ────────────────────────────────────────────────
 
 @app.route('/event/<int:eid>/scores', methods=['GET', 'POST'])
+@admin_required
 def event_scores(eid):
     db = get_db()
     event = db.execute('SELECT * FROM events WHERE id=?', [eid]).fetchone()
@@ -339,8 +490,7 @@ def event_scores(eid):
             val = request.form.get(f'score_{row["id"]}', '').strip()
             if val:
                 try:
-                    db.execute('UPDATE participants SET score=? WHERE id=?',
-                               [float(val), row['id']])
+                    db.execute('UPDATE participants SET score=? WHERE id=?', [float(val), row['id']])
                 except ValueError:
                     pass
         db.commit()
@@ -352,13 +502,14 @@ def event_scores(eid):
         SELECT p.id, p.score, st.name as student_name, s.name as school_name
         FROM participants p
         JOIN students st ON st.id=p.student_id
-        JOIN schools s ON s.id=st.school_id
+        JOIN schools  s  ON s.id=st.school_id
         WHERE p.event_id=? ORDER BY st.name
     ''', [eid]).fetchall()
     db.close()
     return render_template('scores.html', event=event, participants=participants)
 
 @app.route('/event/<int:eid>/results')
+@admin_required
 def event_results(eid):
     db = get_db()
     event = db.execute('SELECT * FROM events WHERE id=?', [eid]).fetchone()
@@ -366,15 +517,16 @@ def event_results(eid):
         SELECT p.*, st.name as student_name, s.name as school_name, s.id as school_id
         FROM participants p
         JOIN students st ON st.id=p.student_id
-        JOIN schools s ON s.id=st.school_id
+        JOIN schools  s  ON s.id=st.school_id
         WHERE p.event_id=? ORDER BY COALESCE(p.rank_pos,999)
     ''', [eid]).fetchall()
     db.close()
     return render_template('results.html', event=event, participants=participants)
 
-# ── Schools ──────────────────────────────────────────────────────────────
+# ── Schools ───────────────────────────────────────────────
 
 @app.route('/schools', methods=['GET', 'POST'])
+@admin_required
 def schools():
     db = get_db()
     if request.method == 'POST':
@@ -391,13 +543,14 @@ def schools():
         SELECT s.*, COUNT(DISTINCT st.id) as cnt_st, COUNT(DISTINCT t.id) as cnt_t
         FROM schools s
         LEFT JOIN students st ON st.school_id=s.id
-        LEFT JOIN teachers t ON t.school_id=s.id
+        LEFT JOIN teachers t  ON t.school_id=s.id
         GROUP BY s.id ORDER BY s.name
     ''').fetchall()
     db.close()
     return render_template('schools.html', schools=rows)
 
 @app.route('/schools/<int:sid>/delete', methods=['POST'])
+@admin_required
 def delete_school(sid):
     db = get_db()
     db.execute('DELETE FROM schools WHERE id=?', [sid])
@@ -407,9 +560,13 @@ def delete_school(sid):
     return redirect(url_for('schools'))
 
 @app.route('/schools/<int:sid>')
+@login_required
 def school_detail(sid):
+    # School users can only access their own school
+    if session.get('role') == 'school' and session.get('school_id') != sid:
+        return redirect(url_for('school_home'))
     db = get_db()
-    school = db.execute('SELECT * FROM schools WHERE id=?', [sid]).fetchone()
+    school   = db.execute('SELECT * FROM schools WHERE id=?', [sid]).fetchone()
     students = db.execute('SELECT * FROM students WHERE school_id=? ORDER BY name', [sid]).fetchall()
     teachers = db.execute('SELECT * FROM teachers WHERE school_id=? ORDER BY name', [sid]).fetchall()
     db.close()
@@ -417,8 +574,12 @@ def school_detail(sid):
                            students=students, teachers=teachers)
 
 @app.route('/schools/<int:sid>/students/add', methods=['POST'])
+@login_required
 def add_student(sid):
-    name = request.form['name'].strip()
+    if session.get('role') == 'school' and session.get('school_id') != sid:
+        flash('ไม่มีสิทธิ์', 'danger')
+        return redirect(url_for('school_home'))
+    name        = request.form['name'].strip()
     class_level = request.form.get('class_level', '').strip()
     if name:
         db = get_db()
@@ -426,21 +587,31 @@ def add_student(sid):
                    [name, sid, class_level])
         db.commit()
         db.close()
-    return redirect(url_for('school_detail', sid=sid))
+    back = url_for('school_home') if session.get('role') == 'school' else url_for('school_detail', sid=sid)
+    return redirect(back)
 
 @app.route('/students/<int:stid>/delete', methods=['POST'])
+@login_required
 def delete_student(stid):
     db = get_db()
     row = db.execute('SELECT school_id FROM students WHERE id=?', [stid]).fetchone()
     sid = row['school_id']
+    if session.get('role') == 'school' and session.get('school_id') != sid:
+        flash('ไม่มีสิทธิ์', 'danger')
+        return redirect(url_for('school_home'))
     db.execute('DELETE FROM students WHERE id=?', [stid])
     db.commit()
     db.close()
-    return redirect(url_for('school_detail', sid=sid))
+    back = url_for('school_home') if session.get('role') == 'school' else url_for('school_detail', sid=sid)
+    return redirect(back)
 
 @app.route('/schools/<int:sid>/teachers/add', methods=['POST'])
+@login_required
 def add_teacher(sid):
-    name = request.form['name'].strip()
+    if session.get('role') == 'school' and session.get('school_id') != sid:
+        flash('ไม่มีสิทธิ์', 'danger')
+        return redirect(url_for('school_home'))
+    name     = request.form['name'].strip()
     position = request.form.get('position', 'ครู').strip()
     if name:
         db = get_db()
@@ -448,25 +619,32 @@ def add_teacher(sid):
                    [name, sid, position])
         db.commit()
         db.close()
-    return redirect(url_for('school_detail', sid=sid))
+    back = url_for('school_home') if session.get('role') == 'school' else url_for('school_detail', sid=sid)
+    return redirect(back)
 
 @app.route('/teachers/<int:tid>/delete', methods=['POST'])
+@login_required
 def delete_teacher(tid):
     db = get_db()
     row = db.execute('SELECT school_id FROM teachers WHERE id=?', [tid]).fetchone()
     sid = row['school_id']
+    if session.get('role') == 'school' and session.get('school_id') != sid:
+        flash('ไม่มีสิทธิ์', 'danger')
+        return redirect(url_for('school_home'))
     db.execute('DELETE FROM teachers WHERE id=?', [tid])
     db.commit()
     db.close()
-    return redirect(url_for('school_detail', sid=sid))
+    back = url_for('school_home') if session.get('role') == 'school' else url_for('school_detail', sid=sid)
+    return redirect(back)
 
-# ── Judges ──────────────────────────────────────────────────────────────
+# ── Judges ────────────────────────────────────────────────
 
 @app.route('/judges', methods=['GET', 'POST'])
+@admin_required
 def judges():
     db = get_db()
     if request.method == 'POST':
-        name = request.form['name'].strip()
+        name     = request.form['name'].strip()
         position = request.form.get('position', 'ครู').strip()
         if name:
             db.execute('INSERT INTO judges (name,position) VALUES (?,?)', [name, position])
@@ -478,6 +656,7 @@ def judges():
     return render_template('judges.html', judges=rows)
 
 @app.route('/judges/<int:jid>/delete', methods=['POST'])
+@admin_required
 def delete_judge(jid):
     db = get_db()
     db.execute('DELETE FROM judges WHERE id=?', [jid])
@@ -485,14 +664,18 @@ def delete_judge(jid):
     db.close()
     return redirect(url_for('judges'))
 
-# ── Certificates ──────────────────────────────────────────────────────────
+# ── Certificates ──────────────────────────────────────────
 
 @app.route('/certificates')
+@login_required
 def certificates():
     db = get_db()
     settings = get_settings()
-    school_id = request.args.get('school_id', type=int)
-    event_id  = request.args.get('event_id',  type=int)
+
+    # School users are restricted to their own school
+    is_school = session.get('role') == 'school'
+    school_id = session.get('school_id') if is_school else request.args.get('school_id', type=int)
+    event_id  = request.args.get('event_id', type=int)
     cert_type = request.args.get('type', 'all')
 
     schools_list = db.execute('SELECT * FROM schools ORDER BY name').fetchall()
@@ -511,12 +694,12 @@ def certificates():
         WHERE p.award IS NOT NULL AND p.award != 'เข้าร่วม'
     '''
     sp = []
-    if school_id: sq += ' AND s.id=?';  sp.append(school_id)
-    if event_id:  sq += ' AND e.id=?';  sp.append(event_id)
+    if school_id: sq += ' AND s.id=?'; sp.append(school_id)
+    if event_id:  sq += ' AND e.id=?'; sp.append(event_id)
     sq += ' ORDER BY e.level,e.name,p.rank_pos'
     student_certs = db.execute(sq, sp).fetchall()
 
-    # Coach certificates — group by coach+event
+    # Coach certificates
     cq = '''
         SELECT c.id as coach_id,
                t.name as teacher_name, t.position,
@@ -525,8 +708,7 @@ def certificates():
                (SELECT p2.award FROM participants p2
                 JOIN students st2 ON st2.id=p2.student_id
                 WHERE p2.event_id=e.id AND st2.school_id=s.id
-                AND p2.award IS NOT NULL
-                ORDER BY p2.rank_pos LIMIT 1) as best_award
+                AND p2.award IS NOT NULL ORDER BY p2.rank_pos LIMIT 1) as best_award
         FROM coaches c
         JOIN teachers t ON t.id=c.teacher_id
         JOIN schools  s ON s.id=t.school_id
@@ -539,19 +721,21 @@ def certificates():
     cq += ' ORDER BY e.level,e.name,t.name'
     coach_certs = db.execute(cq, cp).fetchall()
 
-    # Judge certificates
-    jq = '''
-        SELECT ej.id, j.name as judge_name, j.position,
-               e.name as event_name, e.level as event_level, e.id as event_id
-        FROM event_judges ej
-        JOIN judges j ON j.id=ej.judge_id
-        JOIN events e ON e.id=ej.event_id
-        WHERE 1=1
-    '''
-    jp = []
-    if event_id: jq += ' AND e.id=?'; jp.append(event_id)
-    jq += ' ORDER BY e.level,e.name,j.name'
-    judge_certs = db.execute(jq, jp).fetchall()
+    # Judge certificates (admin view only)
+    judge_certs = []
+    if not is_school:
+        jq = '''
+            SELECT ej.id, j.name as judge_name, j.position,
+                   e.name as event_name, e.level as event_level, e.id as event_id
+            FROM event_judges ej
+            JOIN judges j ON j.id=ej.judge_id
+            JOIN events e ON e.id=ej.event_id
+            WHERE 1=1
+        '''
+        jp = []
+        if event_id: jq += ' AND e.id=?'; jp.append(event_id)
+        jq += ' ORDER BY e.level,e.name,j.name'
+        judge_certs = db.execute(jq, jp).fetchall()
 
     db.close()
     return render_template('certificates.html',
@@ -563,11 +747,13 @@ def certificates():
         selected_school=school_id,
         selected_event=event_id,
         cert_type=cert_type,
+        is_school=is_school,
         thai_date=format_thai_date(settings.get('competition_date','')))
 
-# ── API ──────────────────────────────────────────────────────────────────
+# ── API ───────────────────────────────────────────────────
 
 @app.get('/api/schools/<int:sid>/students')
+@login_required
 def api_students(sid):
     db = get_db()
     rows = db.execute(
@@ -577,6 +763,7 @@ def api_students(sid):
     return jsonify([dict(r) for r in rows])
 
 @app.get('/api/schools/<int:sid>/teachers')
+@login_required
 def api_teachers(sid):
     db = get_db()
     rows = db.execute(
@@ -584,6 +771,8 @@ def api_teachers(sid):
     ).fetchall()
     db.close()
     return jsonify([dict(r) for r in rows])
+
+# ─────────────────────────────────────────────────────────
 
 init_db()
 

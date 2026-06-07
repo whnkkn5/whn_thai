@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}จัดการผู้ใช้งาน{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-people me-2"></i>จัดการผู้ใช้งาน</h1>
+
+<div class="row g-4">
+  <!-- Add user form -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header bg-success text-white">เพิ่มผู้ใช้งาน</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('admin_add_user') }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">ชื่อผู้ใช้ (username)</label>
+            <input name="username" class="form-control" placeholder="เช่น school_banpong" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">รหัสผ่าน</label>
+            <input name="password" type="password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">บทบาท</label>
+            <select name="role" id="role_sel" class="form-select" onchange="toggleSchool(this.value)">
+              <option value="school">👤 ผู้ใช้งานโรงเรียน</option>
+              <option value="admin">🔑 Admin</option>
+            </select>
+          </div>
+          <div class="mb-3" id="school_div">
+            <label class="form-label fw-semibold">โรงเรียน</label>
+            <select name="school_id" id="school_sel" class="form-select">
+              <option value="">-- เลือกโรงเรียน --</option>
+              {% for s in schools %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+            </select>
+            <small class="text-muted">จำเป็นสำหรับผู้ใช้งานโรงเรียน</small>
+          </div>
+          <button class="btn btn-success w-100">
+            <i class="bi bi-plus-circle me-1"></i>เพิ่มผู้ใช้
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="alert alert-info mt-3 small">
+      <i class="bi bi-info-circle me-1"></i>
+      <strong>Admin</strong> — จัดการทุกระบบ<br>
+      <strong>โรงเรียน</strong> — กรอกข้อมูลนักเรียน และพิมพ์เกียรติบัตรของโรงเรียนตัวเองเท่านั้น
+    </div>
+  </div>
+
+  <!-- Users list -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        ผู้ใช้งานทั้งหมด ({{ users|length }} คน)
+      </div>
+      <div class="card-body p-0">
+        {% if users %}
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>ชื่อผู้ใช้</th><th>บทบาท</th><th>โรงเรียน</th><th>สร้างเมื่อ</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr>
+              <td class="fw-semibold">
+                <i class="bi bi-{{ 'shield-check text-warning' if u.role=='admin' else 'person text-info' }} me-1"></i>
+                {{ u.username }}
+                {% if u.id == session.user_id %}
+                  <span class="badge bg-secondary ms-1" style="font-size:.65rem">คุณ</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if u.role == 'admin' %}
+                  <span class="badge bg-warning text-dark">Admin</span>
+                {% else %}
+                  <span class="badge bg-info">โรงเรียน</span>
+                {% endif %}
+              </td>
+              <td>{{ u.school_name or '—' }}</td>
+              <td class="text-muted small">{{ u.created_at[:10] if u.created_at else '—' }}</td>
+              <td class="text-end">
+                <!-- Reset password -->
+                <button class="btn btn-sm btn-outline-secondary me-1"
+                        data-bs-toggle="modal" data-bs-target="#modal_reset_{{ u.id }}">
+                  <i class="bi bi-key"></i>
+                </button>
+                <!-- Delete -->
+                {% if u.id != session.user_id %}
+                <form method="POST" action="{{ url_for('admin_delete_user', uid=u.id) }}"
+                      class="d-inline" onsubmit="return confirm('ลบผู้ใช้ {{ u.username }} ?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+
+            <!-- Reset password modal -->
+            <div class="modal fade" id="modal_reset_{{ u.id }}" tabindex="-1">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header"><h6 class="modal-title">เปลี่ยนรหัสผ่าน — {{ u.username }}</h6></div>
+                  <form method="POST" action="{{ url_for('admin_reset_password', uid=u.id) }}">
+                    <div class="modal-body">
+                      <input name="new_password" type="password" class="form-control"
+                             placeholder="รหัสผ่านใหม่" required>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                      <button class="btn btn-sm btn-primary">บันทึก</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted">ยังไม่มีผู้ใช้งาน</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleSchool(role) {
+  const div = document.getElementById('school_div');
+  div.style.display = role === 'school' ? 'block' : 'none';
+}
+toggleSchool('school');
+</script>
+{% endblock %}

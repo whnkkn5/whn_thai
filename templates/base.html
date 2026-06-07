@@ -17,7 +17,10 @@
     <span>🏆 ระบบแข่งขัน</span>
     <small>วิชาการ</small>
   </div>
+
   <nav>
+    {% if session.role == 'admin' %}
+    <!-- ── Admin Navigation ── -->
     <div class="nav-section">หลัก</div>
     <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint=='index' }}">
       <i class="bi bi-house"></i> แดชบอร์ด</a>
@@ -35,7 +38,34 @@
     <div class="nav-section">ผลการแข่งขัน</div>
     <a href="{{ url_for('certificates') }}" class="{{ 'active' if request.endpoint=='certificates' }}">
       <i class="bi bi-award"></i> พิมพ์เกียรติบัตร</a>
+
+    <div class="nav-section">จัดการระบบ</div>
+    <a href="{{ url_for('admin_users') }}" class="{{ 'active' if request.endpoint=='admin_users' }}">
+      <i class="bi bi-people"></i> จัดการผู้ใช้งาน</a>
+
+    {% else %}
+    <!-- ── School User Navigation ── -->
+    <div class="nav-section">โรงเรียนของฉัน</div>
+    <a href="{{ url_for('school_home') }}" class="{{ 'active' if request.endpoint=='school_home' }}">
+      <i class="bi bi-house"></i> หน้าหลัก</a>
+    <a href="{{ url_for('certificates') }}" class="{{ 'active' if request.endpoint=='certificates' }}">
+      <i class="bi bi-award"></i> พิมพ์เกียรติบัตร</a>
+    {% endif %}
   </nav>
+
+  <!-- User info at bottom -->
+  <div style="margin-top:auto; padding:16px; border-top:1px solid rgba(255,255,255,.15)">
+    <div style="font-size:.8rem; color:rgba(255,255,255,.6); margin-bottom:6px">
+      <i class="bi bi-person-circle me-1"></i>
+      {{ session.username }}
+      <span class="badge ms-1 {{ 'bg-warning text-dark' if session.role=='admin' else 'bg-info' }}" style="font-size:.65rem">
+        {{ 'Admin' if session.role=='admin' else 'โรงเรียน' }}
+      </span>
+    </div>
+    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-light w-100" style="font-size:.8rem">
+      <i class="bi bi-box-arrow-right me-1"></i>ออกจากระบบ
+    </a>
+  </div>
 </div>
 
 <div class="main-content">

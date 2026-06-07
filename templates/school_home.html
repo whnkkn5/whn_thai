@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}{{ school.name if school else 'หน้าหลัก' }}{% endblock %}
+{% block content %}
+
+{% if not school %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  บัญชีของคุณยังไม่ได้เชื่อมกับโรงเรียน — กรุณาติดต่อ Admin
+</div>
+{% else %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="page-title mb-1"><i class="bi bi-building me-2"></i>{{ school.name }}</h1>
+    <span class="text-muted">ยินดีต้อนรับ <strong>{{ session.username }}</strong></span>
+  </div>
+  <a href="{{ url_for('certificates') }}" class="btn btn-success btn-lg">
+    <i class="bi bi-printer me-2"></i>พิมพ์เกียรติบัตร
+  </a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div style="font-size:2rem">👨‍🎓</div>
+      <div class="fs-2 fw-bold text-primary">{{ students|length }}</div>
+      <div class="text-muted small">นักเรียน</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div style="font-size:2rem">👩‍🏫</div>
+      <div class="fs-2 fw-bold text-warning">{{ teachers|length }}</div>
+      <div class="text-muted small">ครู</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Students -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person me-1"></i>นักเรียน</span>
+        <span class="badge bg-white text-info">{{ students|length }} คน</span>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('add_student', sid=school.id) }}" class="mb-3">
+          <div class="input-group">
+            <input name="name" class="form-control" placeholder="ชื่อ-สกุล นักเรียน" required>
+            <input name="class_level" class="form-control" placeholder="ชั้น" style="max-width:100px">
+            <button class="btn btn-info text-white"><i class="bi bi-plus"></i> เพิ่ม</button>
+          </div>
+        </form>
+        {% if students %}
+        <div style="max-height:300px; overflow-y:auto">
+          <ul class="list-group list-group-flush">
+            {% for st in students %}
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+              <div>
+                <span class="fw-semibold">{{ st.name }}</span>
+                {% if st.class_level %}
+                <span class="badge bg-light text-muted ms-1">{{ st.class_level }}</span>
+                {% endif %}
+              </div>
+              <form method="POST" action="{{ url_for('delete_student', stid=st.id) }}"
+                    class="d-inline" onsubmit="return confirm('ลบ {{ st.name }} ?')">
+                <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-x"></i></button>
+              </form>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-3 mb-0">ยังไม่มีนักเรียน — เพิ่มด้านบนได้เลย</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Teachers -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-badge me-1"></i>ครู / ผู้ฝึกสอน</span>
+        <span class="badge bg-white text-warning">{{ teachers|length }} คน</span>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('add_teacher', sid=school.id) }}" class="mb-3">
+          <div class="input-group">
+            <input name="name" class="form-control" placeholder="ชื่อ-สกุล ครู" required>
+            <input name="position" class="form-control" placeholder="ตำแหน่ง" value="ครู" style="max-width:100px">
+            <button class="btn btn-warning"><i class="bi bi-plus"></i> เพิ่ม</button>
+          </div>
+        </form>
+        {% if teachers %}
+        <div style="max-height:300px; overflow-y:auto">
+          <ul class="list-group list-group-flush">
+            {% for t in teachers %}
+            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+              <div>
+                <span class="fw-semibold">{{ t.name }}</span>
+                <span class="text-muted small ms-1">({{ t.position }})</span>
+              </div>
+              <form method="POST" action="{{ url_for('delete_teacher', tid=t.id) }}"
+                    class="d-inline" onsubmit="return confirm('ลบ {{ t.name }} ?')">
+                <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-x"></i></button>
+              </form>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-3 mb-0">ยังไม่มีครู — เพิ่มด้านบนได้เลย</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
