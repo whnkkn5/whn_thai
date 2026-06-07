@@ -11,6 +11,10 @@
       <div class="card-body">
         <form method="POST">
           <div class="mb-3">
+            <label class="form-label">รหัสกิจกรรม</label>
+            <input name="code" class="form-control" placeholder="เช่น 001, ก001">
+          </div>
+          <div class="mb-3">
             <label class="form-label">ชื่อกิจกรรม</label>
             <input name="name" class="form-control" placeholder="เช่น การคัดลายมือ" required>
           </div>
@@ -36,10 +40,11 @@
       <div class="card-body p-0">
         {% if events %}
         <table class="table table-hover mb-0">
-          <thead><tr><th>กิจกรรม</th><th>ระดับ</th><th class="text-center">ผู้เข้าแข่งขัน</th><th></th></tr></thead>
+          <thead><tr><th style="width:90px">รหัส</th><th>กิจกรรม</th><th>ระดับ</th><th class="text-center">ผู้เข้าแข่งขัน</th><th></th></tr></thead>
           <tbody>
             {% for e in events %}
             <tr>
+              <td class="fw-bold text-primary">{{ e.code or '—' }}</td>
               <td><a href="{{ url_for('event_detail', eid=e.id) }}" class="fw-semibold text-decoration-none">{{ e.name }}</a></td>
               <td><span class="badge bg-secondary">{{ e.level }}</span></td>
               <td class="text-center">{{ e.cnt }}</td>

@@ -34,7 +34,8 @@
          style="background:#f8f9fa; cursor:pointer;"
          data-bs-toggle="collapse" data-bs-target="#ev{{ event.id }}">
       <span class="fw-semibold">
-        <i class="bi bi-trophy me-2 text-warning"></i>{{ event.name }}
+        <i class="bi bi-trophy me-2 text-warning"></i>
+        {% if event.code %}<span class="text-primary me-1">[{{ event.code }}]</span>{% endif %}{{ event.name }}
         <span class="badge bg-secondary ms-1">{{ event.level }}</span>
       </span>
       <div class="d-flex align-items-center gap-2">

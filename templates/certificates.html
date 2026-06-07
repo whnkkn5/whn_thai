@@ -84,7 +84,7 @@
       </select>
       <select name="event_id" class="form-select form-select-sm" style="width:220px">
         <option value="">ทุกกิจกรรม</option>
-        {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{{ e.name }} ({{ e.level }})</option>{% endfor %}
+        {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }} ({{ e.level }})</option>{% endfor %}
       </select>
       <select name="type" class="form-select form-select-sm" style="width:180px">
         <option value="all"     {{ 'selected' if cert_type=='all' }}>ทุกประเภท</option>
@@ -97,7 +97,7 @@
     <form method="GET" class="d-flex gap-2 flex-wrap">
       <select name="event_id" class="form-select form-select-sm" style="width:220px">
         <option value="">ทุกกิจกรรม</option>
-        {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{{ e.name }} ({{ e.level }})</option>{% endfor %}
+        {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }} ({{ e.level }})</option>{% endfor %}
       </select>
       <select name="type" class="form-select form-select-sm" style="width:180px">
         <option value="all"    {{ 'selected' if cert_type=='all' }}>ทุกประเภท</option>

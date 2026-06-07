@@ -44,6 +44,7 @@ def init_db():
         );
         CREATE TABLE IF NOT EXISTS events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT NOT NULL DEFAULT '',
             name TEXT NOT NULL,
             level TEXT NOT NULL
         );
@@ -100,6 +101,13 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now'))
         );
     ''')
+
+    # Migrate: add code column to events if not present (existing databases)
+    try:
+        db.execute("ALTER TABLE events ADD COLUMN code TEXT NOT NULL DEFAULT ''")
+        db.commit()
+    except Exception:
+        pass
 
     # Create default admin if none exists
     admin = db.execute("SELECT 1 FROM users WHERE role='admin'").fetchone()
@@ -233,7 +241,7 @@ def index():
                COUNT(DISTINCT p.id) as cnt_total,
                COUNT(DISTINCT CASE WHEN p.score IS NOT NULL THEN p.id END) as cnt_scored
         FROM events e LEFT JOIN participants p ON p.event_id=e.id
-        GROUP BY e.id ORDER BY e.level, e.name
+        GROUP BY e.id ORDER BY e.code, e.name
     ''').fetchall()
     school_count = db.execute('SELECT COUNT(*) FROM schools').fetchone()[0]
     judge_count  = db.execute('SELECT COUNT(*) FROM judges').fetchone()[0]
@@ -256,7 +264,7 @@ def school_home():
     school   = db.execute('SELECT * FROM schools WHERE id=?', [sid]).fetchone() if sid else None
     students = db.execute('SELECT * FROM students WHERE school_id=? ORDER BY name', [sid]).fetchall() if sid else []
     teachers = db.execute('SELECT * FROM teachers WHERE school_id=? ORDER BY name', [sid]).fetchall() if sid else []
-    events   = db.execute('SELECT * FROM events ORDER BY level, name').fetchall() if sid else []
+    events   = db.execute('SELECT * FROM events ORDER BY code, name').fetchall() if sid else []
 
     parts_by_event   = {}
     coaches_by_event = {}
@@ -380,17 +388,18 @@ def settings_page():
 def events():
     db = get_db()
     if request.method == 'POST':
+        code  = request.form.get('code', '').strip()
         name  = request.form['name'].strip()
         level = request.form['level'].strip()
         if name and level:
-            db.execute('INSERT INTO events (name,level) VALUES (?,?)', [name, level])
+            db.execute('INSERT INTO events (code,name,level) VALUES (?,?,?)', [code, name, level])
             db.commit()
             flash(f'เพิ่มกิจกรรม "{name}" แล้ว', 'success')
         return redirect(url_for('events'))
     rows = db.execute('''
         SELECT e.*, COUNT(p.id) as cnt
         FROM events e LEFT JOIN participants p ON p.event_id=e.id
-        GROUP BY e.id ORDER BY e.level, e.name
+        GROUP BY e.id ORDER BY e.code, e.name
     ''').fetchall()
     db.close()
     return render_template('events.html', events=rows)
@@ -748,7 +757,7 @@ def certificates():
     cert_type = request.args.get('type', 'all')
 
     schools_list = db.execute('SELECT * FROM schools ORDER BY name').fetchall()
-    events_list  = db.execute('SELECT * FROM events ORDER BY level,name').fetchall()
+    events_list  = db.execute('SELECT * FROM events ORDER BY code, name').fetchall()
 
     # Student certificates
     sq = '''
@@ -765,7 +774,7 @@ def certificates():
     sp = []
     if school_id: sq += ' AND s.id=?'; sp.append(school_id)
     if event_id:  sq += ' AND e.id=?'; sp.append(event_id)
-    sq += ' ORDER BY e.level,e.name,p.rank_pos'
+    sq += ' ORDER BY e.code,e.name,p.rank_pos'
     student_certs = db.execute(sq, sp).fetchall()
 
     # Coach certificates
@@ -787,7 +796,7 @@ def certificates():
     cp = []
     if school_id: cq += ' AND s.id=?'; cp.append(school_id)
     if event_id:  cq += ' AND e.id=?'; cp.append(event_id)
-    cq += ' ORDER BY e.level,e.name,t.name'
+    cq += ' ORDER BY e.code,e.name,t.name'
     coach_certs = db.execute(cq, cp).fetchall()
 
     active_templates = get_active_templates()
@@ -810,7 +819,7 @@ def judge_certificates():
     db = get_db()
     settings    = get_settings()
     event_id    = request.args.get('event_id', type=int)
-    events_list = db.execute('SELECT * FROM events ORDER BY level,name').fetchall()
+    events_list = db.execute('SELECT * FROM events ORDER BY code, name').fetchall()
     jq = '''
         SELECT ej.id, j.name as judge_name, j.position,
                e.name as event_name, e.level as event_level, e.id as event_id
@@ -821,7 +830,7 @@ def judge_certificates():
     '''
     jp = []
     if event_id: jq += ' AND e.id=?'; jp.append(event_id)
-    jq += ' ORDER BY e.level,e.name,j.name'
+    jq += ' ORDER BY e.code,e.name,j.name'
     judge_certs      = db.execute(jq, jp).fetchall()
     active_templates = get_active_templates()
     db.close()
@@ -837,7 +846,7 @@ def judge_certificates():
 @login_required
 def all_results():
     db      = get_db()
-    events  = db.execute('SELECT * FROM events ORDER BY level, name').fetchall()
+    events  = db.execute('SELECT * FROM events ORDER BY code, name').fetchall()
     parts   = db.execute('''
         SELECT p.event_id, p.rank_pos, p.award, p.score,
                st.name as student_name, st.class_level,
