@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}กรอกคะแนน — {{ event.name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('events') }}">กิจกรรม</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('event_detail', eid=event.id) }}">{{ event.name }}</a></li>
+    <li class="breadcrumb-item active">กรอกคะแนน</li>
+  </ol>
+</nav>
+
+<h1 class="page-title"><i class="bi bi-pencil-square me-2"></i>กรอกคะแนน — {{ event.name }}
+  <span class="badge bg-secondary fs-6 ms-2">{{ event.level }}</span>
+</h1>
+
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-1"></i>
+  ระบบจะคำนวณรางวัลอัตโนมัติ: <strong>≥80</strong> = เหรียญทอง &nbsp;|&nbsp;
+  <strong>≥70</strong> = เหรียญเงิน &nbsp;|&nbsp;
+  <strong>≥60</strong> = เหรียญทองแดง &nbsp;|&nbsp;
+  <strong>&lt;60</strong> = เข้าร่วม<br>
+  อันดับ 1-3 (คะแนน≥80) จะได้รับตำแหน่ง ชนะเลิศ / รองชนะเลิศ โดยอัตโนมัติ
+</div>
+
+{% if participants %}
+<div class="card">
+  <div class="card-header bg-primary text-white">
+    ผู้เข้าแข่งขัน {{ participants|length }} คน
+  </div>
+  <div class="card-body p-0">
+    <form method="POST">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>ชื่อนักเรียน</th>
+            <th>โรงเรียน</th>
+            <th style="width:150px">คะแนน (0-100)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in participants %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td class="fw-semibold">{{ p.student_name }}</td>
+            <td>{{ p.school_name }}</td>
+            <td>
+              <input type="number" name="score_{{ p.id }}"
+                     class="form-control form-control-sm"
+                     min="0" max="100" step="0.5"
+                     value="{{ p.score if p.score is not none else '' }}"
+                     placeholder="0-100">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="p-3 border-top d-flex gap-2">
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="bi bi-save me-1"></i>บันทึกคะแนน & คำนวณรางวัล
+        </button>
+        <a href="{{ url_for('event_detail', eid=event.id) }}" class="btn btn-outline-secondary">
+          ยกเลิก
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle me-1"></i>
+  ยังไม่มีนักเรียนในกิจกรรมนี้ —
+  <a href="{{ url_for('event_detail', eid=event.id) }}">เพิ่มนักเรียกก่อน</a>
+</div>
+{% endif %}
+{% endblock %}

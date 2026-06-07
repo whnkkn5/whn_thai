@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}คณะกรรมการ{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-person-badge me-2"></i>คณะกรรมการตัดสิน</h1>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header bg-success text-white">เพิ่มกรรมการ</div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">ชื่อกรรมการ</label>
+            <input name="name" class="form-control" placeholder="ชื่อ-สกุล" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ตำแหน่ง</label>
+            <input name="position" class="form-control" value="ครู" placeholder="เช่น ผู้อำนวยการ">
+          </div>
+          <button class="btn btn-success w-100"><i class="bi bi-plus-circle me-1"></i>เพิ่ม</button>
+        </form>
+      </div>
+    </div>
+    <div class="alert alert-info mt-3 small">
+      <i class="bi bi-info-circle me-1"></i>
+      หลังจากเพิ่มกรรมการแล้ว ให้ไปที่หน้า <strong>กิจกรรม</strong> เพื่อกำหนดกรรมการให้แต่ละกิจกรรม
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header bg-primary text-white">กรรมการทั้งหมด ({{ judges|length }} คน)</div>
+      <div class="card-body p-0">
+        {% if judges %}
+        <table class="table table-hover mb-0">
+          <thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th></th></tr></thead>
+          <tbody>
+            {% for j in judges %}
+            <tr>
+              <td class="fw-semibold">{{ j.name }}</td>
+              <td>{{ j.position }}</td>
+              <td class="text-end">
+                <form method="POST" action="{{ url_for('delete_judge', jid=j.id) }}"
+                      class="d-inline" onsubmit="return confirm('ลบ {{ j.name }} ?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inbox" style="font-size:2rem"></i>
+          <p class="mt-2">ยังไม่มีกรรมการ</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

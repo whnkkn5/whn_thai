@@ -1,0 +1,194 @@
+/* ── Global ─────────────────────────────────────────── */
+:root {
+  --gold: #c8960c;
+  --gold-light: #f5e6a3;
+  --gold-dark: #8b6914;
+  --silver: #9e9e9e;
+  --bronze: #cd7f32;
+  --primary: #1a5276;
+  --sidebar-w: 230px;
+}
+
+body { font-family: 'Sarabun', 'TH Sarabun New', Sarabun, sans-serif;
+       background: #f4f6f9; margin: 0; font-size: 16px; }
+
+/* ── Layout ──────────────────────────────────────────── */
+.sidebar {
+  position: fixed; top: 0; left: 0;
+  width: var(--sidebar-w); height: 100vh;
+  background: var(--primary);
+  color: #fff; overflow-y: auto; z-index: 100;
+  display: flex; flex-direction: column;
+}
+.sidebar-brand {
+  padding: 20px 16px 14px;
+  font-size: 1rem; font-weight: 700;
+  border-bottom: 1px solid rgba(255,255,255,.15);
+  line-height: 1.4;
+}
+.sidebar-brand small { font-size: .75rem; opacity: .7; display: block; }
+.sidebar nav a {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 20px; color: rgba(255,255,255,.82);
+  text-decoration: none; font-size: .95rem;
+  border-left: 3px solid transparent;
+  transition: all .15s;
+}
+.sidebar nav a:hover, .sidebar nav a.active {
+  background: rgba(255,255,255,.1);
+  color: #fff; border-left-color: #f0c040;
+}
+.sidebar nav .nav-section {
+  padding: 12px 20px 4px;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
+  color: rgba(255,255,255,.4);
+}
+.main-content { margin-left: var(--sidebar-w); padding: 28px 32px; min-height: 100vh; }
+
+/* ── Cards ────────────────────────────────────────────── */
+.card { border: none; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 20px; }
+.card-header { border-radius: 10px 10px 0 0 !important;
+               font-weight: 600; padding: 14px 20px; }
+.page-title { font-size: 1.5rem; font-weight: 700;
+              color: var(--primary); margin-bottom: 24px; }
+
+/* ── Badges / Awards ─────────────────────────────────── */
+.award-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: .82rem; font-weight: 600; white-space: nowrap;
+}
+.award-gold-champion { background: linear-gradient(135deg,#f5e642,#c8960c);
+  color: #3d2b00; border: 1px solid #a07800; }
+.award-gold-runner1  { background: linear-gradient(135deg,#ffe878,#d4a017);
+  color: #3d2b00; }
+.award-gold-runner2  { background: linear-gradient(135deg,#ffd970,#b8860b);
+  color: #3d2b00; }
+.award-gold   { background: #fff3cd; color: #856404; border:1px solid #ffc107; }
+.award-silver { background: #f0f0f0; color: #555; border:1px solid #bbb; }
+.award-bronze { background: #fde8d8; color: #7d4e24; border:1px solid #cd7f32; }
+.award-participate { background: #e8f4fd; color: #0c5460; }
+
+/* ── Tables ───────────────────────────────────────────── */
+.table th { background: #f8f9fa; font-weight: 600; font-size: .9rem; }
+.table td { vertical-align: middle; }
+
+/* ── Alerts ───────────────────────────────────────────── */
+.alert { border-radius: 8px; }
+
+/* ── Forms ────────────────────────────────────────────── */
+.form-control, .form-select { border-radius: 7px; font-size: .95rem; }
+.btn { border-radius: 7px; }
+
+/* ════════════════════════════════════════════════════════
+   CERTIFICATE STYLES
+   ════════════════════════════════════════════════════════ */
+.cert-page {
+  width: 210mm; min-height: 148mm;
+  margin: 0 auto 24px;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center;
+  padding: 12mm 16mm;
+  box-sizing: border-box;
+}
+
+/* Outer gold border */
+.cert-page::before {
+  content: ''; position: absolute;
+  inset: 6mm; border: 2.5px solid #c8960c;
+  pointer-events: none;
+}
+/* Inner thin border */
+.cert-page::after {
+  content: ''; position: absolute;
+  inset: 8mm; border: 1px solid #dbb64c;
+  pointer-events: none;
+}
+
+/* Corner ornaments */
+.cert-corner {
+  position: absolute; width: 18mm; height: 18mm;
+  background: radial-gradient(circle at center, #f5e6a3, #c8960c);
+  opacity: .35;
+}
+.cert-corner-tl { top: 4mm; left: 4mm; clip-path: polygon(0 0,100% 0,0 100%); }
+.cert-corner-tr { top: 4mm; right: 4mm; clip-path: polygon(0 0,100% 0,100% 100%); }
+.cert-corner-bl { bottom: 4mm; left: 4mm; clip-path: polygon(0 0,0 100%,100% 100%); }
+.cert-corner-br { bottom: 4mm; right: 4mm; clip-path: polygon(100% 0,0 100%,100% 100%); }
+
+.cert-header { text-align: center; margin-bottom: 6mm; width: 100%; }
+.cert-org    { font-size: 1rem; color: #555; margin-bottom: 2mm; }
+.cert-title  {
+  font-size: 2.4rem; font-weight: 700;
+  color: var(--gold-dark);
+  letter-spacing: .08em;
+  text-shadow: 1px 1px 0 rgba(200,150,12,.25);
+  margin: 0 0 1mm;
+}
+.cert-subtitle { font-size: .9rem; color: #888; margin: 0; }
+
+.cert-body { text-align: center; width: 100%; }
+.cert-name {
+  font-size: 1.9rem; font-weight: 700; color: #1a1a1a;
+  border-bottom: 2px solid var(--gold);
+  display: inline-block; padding-bottom: 1mm;
+  margin: 3mm 0 2mm;
+}
+.cert-school   { font-size: 1rem; color: #444; margin-bottom: 3mm; }
+.cert-text     { font-size: 1rem; color: #333; line-height: 1.8; }
+.cert-event    { font-size: 1rem; font-weight: 600; color: var(--primary); }
+.cert-award-wrap { margin: 3mm 0; }
+.cert-award    {
+  display: inline-block; padding: 3mm 8mm;
+  font-size: 1.25rem; font-weight: 700;
+  border-radius: 30px; letter-spacing: .04em;
+}
+.cert-award.gold-champion { background:linear-gradient(135deg,#f5e642,#c8960c); color:#3d2b00; border:2px solid #a07800; }
+.cert-award.gold-runner1  { background:linear-gradient(135deg,#ffe878,#d4a017); color:#3d2b00; }
+.cert-award.gold-runner2  { background:linear-gradient(135deg,#ffd970,#b8860b); color:#3d2b00; }
+.cert-award.gold    { background:#fff3cd; color:#856404; border:1px solid #ffc107; }
+.cert-award.silver  { background:#e8e8e8; color:#444; border:1px solid #aaa; }
+.cert-award.bronze  { background:#fde8d8; color:#7d4e24; border:1px solid #cd7f32; }
+.cert-award.judge-cert { background:linear-gradient(135deg,#d4eaff,#90c4ff); color:#0a3d6e; border:1px solid #4a9eff; }
+
+.cert-medal { font-size: 2.5rem; display: block; margin-bottom: 1mm; }
+
+.cert-footer {
+  display: flex; justify-content: space-around; align-items: flex-end;
+  width: 100%; margin-top: 6mm; gap: 10mm;
+}
+.cert-sign { text-align: center; flex: 1; }
+.cert-sign-line {
+  border-bottom: 1.5px solid #888; margin: 0 auto 2mm;
+  width: 45mm; height: 10mm;
+}
+.cert-sign-name { font-size: .9rem; font-weight: 600; color: #222; }
+.cert-sign-pos  { font-size: .8rem; color: #666; }
+
+.cert-date { font-size: .85rem; color: #777; margin-top: 4mm; text-align: center; width: 100%; }
+
+/* Print controls */
+.print-controls {
+  position: sticky; top: 0; z-index: 200;
+  background: #fff; border-bottom: 1px solid #dee2e6;
+  padding: 12px 24px; display: flex; gap: 10px; align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Print media ─────────────────────────────────────── */
+@media print {
+  body { background: #fff; margin: 0; }
+  .sidebar, .print-controls, .no-print { display: none !important; }
+  .main-content { margin: 0; padding: 0; }
+
+  .cert-page {
+    width: 210mm; min-height: 148mm;
+    box-shadow: none; page-break-after: always;
+    margin: 0; padding: 12mm 16mm;
+  }
+  @page { size: A5 landscape; margin: 0; }
+}

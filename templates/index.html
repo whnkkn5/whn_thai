@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}แดชบอร์ด — ระบบแข่งขันวิชาการ{% endblock %}
+{% block content %}
+<h1 class="page-title">
+  <i class="bi bi-house me-2"></i>
+  {{ settings.competition_name or 'ระบบแข่งขันวิชาการ' }}
+</h1>
+
+{% if settings.network_name %}
+<p class="text-muted mb-4"><i class="bi bi-geo-alt me-1"></i>{{ settings.network_name }}</p>
+{% endif %}
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card text-center h-100">
+      <div class="card-body py-4">
+        <div style="font-size:2.2rem">🏆</div>
+        <div class="fs-2 fw-bold text-primary">{{ events|length }}</div>
+        <div class="text-muted">กิจกรรมทั้งหมด</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center h-100">
+      <div class="card-body py-4">
+        <div style="font-size:2.2rem">🏫</div>
+        <div class="fs-2 fw-bold text-success">{{ school_count }}</div>
+        <div class="text-muted">โรงเรียน</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center h-100">
+      <div class="card-body py-4">
+        <div style="font-size:2.2rem">👤</div>
+        <div class="fs-2 fw-bold text-warning">{{ events|sum(attribute='cnt_total') }}</div>
+        <div class="text-muted">ผู้เข้าแข่งขัน</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center h-100">
+      <div class="card-body py-4">
+        <div style="font-size:2.2rem">📋</div>
+        <div class="fs-2 fw-bold text-info">{{ judge_count }}</div>
+        <div class="text-muted">คณะกรรมการ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Events Table -->
+<div class="card">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-trophy me-2"></i>กิจกรรมการแข่งขัน</span>
+    <a href="{{ url_for('events') }}" class="btn btn-sm btn-light">จัดการกิจกรรม</a>
+  </div>
+  <div class="card-body p-0">
+    {% if events %}
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>กิจกรรม</th>
+          <th>ระดับ</th>
+          <th class="text-center">ผู้เข้าแข่งขัน</th>
+          <th class="text-center">สถานะ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in events %}
+        <tr>
+          <td><a href="{{ url_for('event_detail', eid=e.id) }}" class="fw-semibold text-decoration-none">{{ e.name }}</a></td>
+          <td><span class="badge bg-secondary">{{ e.level }}</span></td>
+          <td class="text-center">{{ e.cnt_total }}</td>
+          <td class="text-center">
+            {% if e.cnt_total == 0 %}
+              <span class="badge bg-light text-muted">ยังไม่มีผู้เข้าแข่งขัน</span>
+            {% elif e.cnt_scored == 0 %}
+              <span class="badge bg-warning text-dark">ยังไม่กรอกคะแนน</span>
+            {% elif e.cnt_scored < e.cnt_total %}
+              <span class="badge bg-info">กรอกคะแนนบางส่วน</span>
+            {% else %}
+              <span class="badge bg-success">เสร็จสิ้น</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('event_scores', eid=e.id) }}" class="btn btn-sm btn-outline-primary me-1">กรอกคะแนน</a>
+            <a href="{{ url_for('event_results', eid=e.id) }}" class="btn btn-sm btn-outline-success">ผล</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-inbox" style="font-size:2rem"></i>
+      <p class="mt-2">ยังไม่มีกิจกรรม — <a href="{{ url_for('events') }}">เพิ่มกิจกรรม</a></p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

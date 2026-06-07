@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}โรงเรียน{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-building me-2"></i>โรงเรียน</h1>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header bg-success text-white">เพิ่มโรงเรียน</div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">ชื่อโรงเรียน</label>
+            <input name="name" class="form-control" placeholder="เช่น บ้านโป่งแห้ง" required>
+          </div>
+          <button class="btn btn-success w-100"><i class="bi bi-plus-circle me-1"></i>เพิ่ม</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header bg-primary text-white">โรงเรียนทั้งหมด ({{ schools|length }} โรง)</div>
+      <div class="card-body p-0">
+        {% if schools %}
+        <table class="table table-hover mb-0">
+          <thead><tr><th>ชื่อโรงเรียน</th><th class="text-center">นักเรียน</th><th class="text-center">ครู</th><th></th></tr></thead>
+          <tbody>
+            {% for s in schools %}
+            <tr>
+              <td><a href="{{ url_for('school_detail', sid=s.id) }}" class="fw-semibold text-decoration-none">{{ s.name }}</a></td>
+              <td class="text-center">{{ s.cnt_st }}</td>
+              <td class="text-center">{{ s.cnt_t }}</td>
+              <td class="text-end">
+                <a href="{{ url_for('school_detail', sid=s.id) }}" class="btn btn-sm btn-outline-primary me-1">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <form method="POST" action="{{ url_for('delete_school', sid=s.id) }}"
+                      class="d-inline"
+                      onsubmit="return confirm('ลบโรงเรียน {{ s.name }} ?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inbox" style="font-size:2rem"></i>
+          <p class="mt-2">ยังไม่มีโรงเรียน</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

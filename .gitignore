@@ -1,0 +1,19 @@
+# Database (ข้อมูลจริง ไม่ควร commit)
+competition.db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

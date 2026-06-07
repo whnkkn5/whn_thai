@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}ผลการแข่งขัน — {{ event.name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('events') }}">กิจกรรม</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('event_detail', eid=event.id) }}">{{ event.name }}</a></li>
+    <li class="breadcrumb-item active">ผล</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="page-title mb-1">ผลการแข่งขัน</h1>
+    <h5 class="text-muted">{{ event.name }} <span class="badge bg-secondary">{{ event.level }}</span></h5>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('event_scores', eid=event.id) }}" class="btn btn-outline-primary">
+      <i class="bi bi-pencil me-1"></i>แก้ไขคะแนน
+    </a>
+    <a href="{{ url_for('certificates') }}?event_id={{ event.id }}" class="btn btn-success">
+      <i class="bi bi-award me-1"></i>พิมพ์เกียรติบัตร
+    </a>
+  </div>
+</div>
+
+{% if participants %}
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th class="text-center">อันดับ</th>
+          <th>ชื่อนักเรียน</th>
+          <th>โรงเรียน</th>
+          <th class="text-center">คะแนน</th>
+          <th>รางวัล</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in participants %}
+        <tr {% if p.rank_pos == 1 %}class="table-warning"{% endif %}>
+          <td class="text-center fw-bold">
+            {% if p.rank_pos == 1 %}🥇
+            {% elif p.rank_pos == 2 %}🥈
+            {% elif p.rank_pos == 3 %}🥉
+            {% else %}{{ p.rank_pos or '-' }}{% endif %}
+          </td>
+          <td class="fw-semibold">{{ p.student_name }}</td>
+          <td>{{ p.school_name }}</td>
+          <td class="text-center">
+            {% if p.score is not none %}
+              <strong>{{ '%.1f'|format(p.score) }}</strong>
+            {% else %}-{% endif %}
+          </td>
+          <td>
+            {% if p.award %}
+              <span class="award-badge award-{{ p.award|award_css }}">
+                {{ p.award|award_icon }} {{ p.award }}
+              </span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle me-1"></i>
+  ยังไม่มีข้อมูลผล — <a href="{{ url_for('event_scores', eid=event.id) }}">กรอกคะแนน</a>
+</div>
+{% endif %}
+{% endblock %}

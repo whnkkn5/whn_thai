@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}ตั้งค่าการแข่งขัน{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-gear me-2"></i>ตั้งค่าการแข่งขัน</h1>
+
+<div class="card" style="max-width:680px">
+  <div class="card-header bg-primary text-white">ข้อมูลงานแข่งขัน</div>
+  <div class="card-body">
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">ชื่องานแข่งขัน</label>
+        <input name="competition_name" class="form-control"
+               value="{{ s.competition_name }}" placeholder="เช่น การแข่งขันวันภาษาไทยแห่งชาติ">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">ชื่อศูนย์เครือข่าย / หน่วยงาน</label>
+        <input name="network_name" class="form-control"
+               value="{{ s.network_name }}" placeholder="เช่น ศูนย์เครือข่ายโรงเรียนกุดจับ">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">วันที่จัดงาน</label>
+        <input name="competition_date" type="date" class="form-control"
+               value="{{ s.competition_date }}">
+      </div>
+      <hr>
+      <p class="fw-semibold mb-3">ลายเซ็นบนเกียรติบัตร</p>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label">ชื่อผู้ลงนาม 1</label>
+          <input name="signer1_name" class="form-control" value="{{ s.signer1_name }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">ตำแหน่ง</label>
+          <input name="signer1_position" class="form-control" value="{{ s.signer1_position }}">
+        </div>
+      </div>
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label">ชื่อผู้ลงนาม 2 (ถ้ามี)</label>
+          <input name="signer2_name" class="form-control" value="{{ s.signer2_name }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">ตำแหน่ง</label>
+          <input name="signer2_position" class="form-control" value="{{ s.signer2_position }}">
+        </div>
+      </div>
+      <button class="btn btn-primary px-4"><i class="bi bi-save me-1"></i>บันทึก</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

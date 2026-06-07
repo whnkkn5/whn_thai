@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}{{ event.name }} — จัดการ{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('events') }}">กิจกรรม</a></li>
+    <li class="breadcrumb-item active">{{ event.name }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="page-title mb-1">{{ event.name }}</h1>
+    <span class="badge bg-secondary fs-6">{{ event.level }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('event_scores', eid=event.id) }}" class="btn btn-primary">
+      <i class="bi bi-pencil-square me-1"></i>กรอกคะแนน
+    </a>
+    <a href="{{ url_for('event_results', eid=event.id) }}" class="btn btn-success">
+      <i class="bi bi-bar-chart me-1"></i>ดูผล
+    </a>
+  </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="eventTabs">
+  <li class="nav-item">
+    <a class="nav-link active" data-bs-toggle="tab" href="#tab-students">
+      <i class="bi bi-person me-1"></i>นักเรียน ({{ participants|length }})
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#tab-coaches">
+      <i class="bi bi-person-badge me-1"></i>ครูผู้ฝึกสอน ({{ coaches|length }})
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#tab-judges">
+      <i class="bi bi-briefcase me-1"></i>กรรมการ ({{ event_judges|length }})
+    </a>
+  </li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- ── Students ── -->
+  <div class="tab-pane fade show active" id="tab-students">
+    <div class="card mb-3">
+      <div class="card-header bg-info text-white">เพิ่มนักเรียนเข้าแข่งขัน</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('add_participant', eid=event.id) }}" class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label">โรงเรียน</label>
+            <select id="school_sel" class="form-select" onchange="loadStudents(this.value)">
+              <option value="">-- เลือกโรงเรียน --</option>
+              {% for s in schools %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">นักเรียน</label>
+            <select name="student_id" id="student_sel" class="form-select" required>
+              <option value="">-- เลือกนักเรียน --</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button class="btn btn-info text-white w-100"><i class="bi bi-plus-circle me-1"></i>เพิ่ม</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body p-0">
+        {% if participants %}
+        <table class="table table-hover mb-0">
+          <thead><tr><th>#</th><th>ชื่อ</th><th>โรงเรียน</th><th>ชั้น</th><th class="text-center">คะแนน</th><th>รางวัล</th><th></th></tr></thead>
+          <tbody>
+            {% for p in participants %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td class="fw-semibold">{{ p.student_name }}</td>
+              <td>{{ p.school_name }}</td>
+              <td>{{ p.class_level or '-' }}</td>
+              <td class="text-center">{{ p.score if p.score is not none else '-' }}</td>
+              <td>
+                {% if p.award %}
+                  <span class="award-badge award-{{ p.award|award_css }}">{{ p.award }}</span>
+                {% else %}-{% endif %}
+              </td>
+              <td>
+                <form method="POST" action="{{ url_for('delete_participant', pid=p.id) }}"
+                      class="d-inline" onsubmit="return confirm('ลบออกจากกิจกรรมนี้?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted"><p>ยังไม่มีนักเรียน</p></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Coaches ── -->
+  <div class="tab-pane fade" id="tab-coaches">
+    <div class="card mb-3">
+      <div class="card-header bg-warning text-dark">เพิ่มครูผู้ฝึกสอน</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('add_coach', eid=event.id) }}" class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label">โรงเรียน</label>
+            <select id="coach_school_sel" class="form-select" onchange="loadTeachers(this.value)">
+              <option value="">-- เลือกโรงเรียน --</option>
+              {% for s in schools %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">ครู</label>
+            <select name="teacher_id" id="teacher_sel" class="form-select" required>
+              <option value="">-- เลือกครู --</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button class="btn btn-warning w-100"><i class="bi bi-plus-circle me-1"></i>เพิ่ม</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body p-0">
+        {% if coaches %}
+        <table class="table table-hover mb-0">
+          <thead><tr><th>#</th><th>ชื่อ</th><th>ตำแหน่ง</th><th>โรงเรียน</th><th></th></tr></thead>
+          <tbody>
+            {% for c in coaches %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td class="fw-semibold">{{ c.teacher_name }}</td>
+              <td>{{ c.position }}</td>
+              <td>{{ c.school_name }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('delete_coach', cid=c.id) }}"
+                      class="d-inline" onsubmit="return confirm('ลบออก?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted"><p>ยังไม่มีครูผู้ฝึกสอน</p></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Judges ── -->
+  <div class="tab-pane fade" id="tab-judges">
+    <div class="card mb-3">
+      <div class="card-header bg-secondary text-white">กำหนดกรรมการตัดสิน</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('add_event_judge', eid=event.id) }}" class="row g-2">
+          <div class="col-md-6">
+            <select name="judge_id" class="form-select" required>
+              <option value="">-- เลือกกรรมการ --</option>
+              {% for j in all_judges %}<option value="{{ j.id }}">{{ j.name }} ({{ j.position }})</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-secondary w-100"><i class="bi bi-plus-circle me-1"></i>เพิ่ม</button>
+          </div>
+          <div class="col-12">
+            <small class="text-muted">เพิ่มกรรมการได้ที่เมนู <a href="{{ url_for('judges') }}">คณะกรรมการ</a></small>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body p-0">
+        {% if event_judges %}
+        <table class="table table-hover mb-0">
+          <thead><tr><th>#</th><th>ชื่อ</th><th>ตำแหน่ง</th><th></th></tr></thead>
+          <tbody>
+            {% for ej in event_judges %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td class="fw-semibold">{{ ej.judge_name }}</td>
+              <td>{{ ej.position }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('delete_event_judge', ejid=ej.id) }}"
+                      class="d-inline" onsubmit="return confirm('ลบออก?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted"><p>ยังไม่มีกรรมการตัดสิน</p></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadStudents(sid) {
+  const sel = document.getElementById('student_sel');
+  sel.innerHTML = '<option value="">-- กำลังโหลด --</option>';
+  if (!sid) { sel.innerHTML = '<option value="">-- เลือกนักเรียน --</option>'; return; }
+  fetch(`/api/schools/${sid}/students`)
+    .then(r => r.json())
+    .then(data => {
+      sel.innerHTML = '<option value="">-- เลือกนักเรียน --</option>';
+      data.forEach(s => {
+        sel.innerHTML += `<option value="${s.id}">${s.name}${s.class_level ? ' ('+s.class_level+')' : ''}</option>`;
+      });
+    });
+}
+function loadTeachers(sid) {
+  const sel = document.getElementById('teacher_sel');
+  sel.innerHTML = '<option value="">-- กำลังโหลด --</option>';
+  if (!sid) { sel.innerHTML = '<option value="">-- เลือกครู --</option>'; return; }
+  fetch(`/api/schools/${sid}/teachers`)
+    .then(r => r.json())
+    .then(data => {
+      sel.innerHTML = '<option value="">-- เลือกครู --</option>';
+      data.forEach(t => {
+        sel.innerHTML += `<option value="${t.id}">${t.name} (${t.position})</option>`;
+      });
+    });
+}
+</script>
+{% endblock %}
