@@ -745,16 +745,35 @@ def add_student(sid):
     if session.get('role') == 'school' and session.get('school_id') != sid:
         flash('ไม่มีสิทธิ์', 'danger')
         return redirect(url_for('school_home'))
-    name        = request.form['name'].strip()
-    class_level = request.form.get('class_level', '').strip()
+    name = request.form['name'].strip()
     if name:
         db = get_db()
-        db.execute('INSERT INTO students (name,school_id,class_level) VALUES (%s,%s,%s)',
-                   [name, sid, class_level])
+        db.execute('INSERT INTO students (name,school_id) VALUES (%s,%s)',
+                   [name, sid])
         db.commit()
         db.close()
     back = url_for('school_home') if session.get('role') == 'school' else url_for('school_detail', sid=sid)
     return redirect(back)
+
+@app.route('/students/<int:stid>/edit', methods=['POST'])
+@login_required
+def edit_student(stid):
+    db = get_db()
+    row = db.execute('SELECT school_id FROM students WHERE id=%s', [stid]).fetchone()
+    if not row:
+        db.close()
+        return redirect(url_for('school_home'))
+    sid = row['school_id']
+    if session.get('role') == 'school' and session.get('school_id') != sid:
+        flash('ไม่มีสิทธิ์', 'danger')
+        db.close()
+        return redirect(url_for('school_home'))
+    name = request.form['name'].strip()
+    if name:
+        db.execute('UPDATE students SET name=%s WHERE id=%s', [name, stid])
+        db.commit()
+    db.close()
+    return redirect(url_for('school_home') if session.get('role') == 'school' else url_for('school_detail', sid=sid))
 
 @app.route('/students/<int:stid>/delete', methods=['POST'])
 @login_required
@@ -787,6 +806,27 @@ def add_teacher(sid):
         db.close()
     back = url_for('school_home') if session.get('role') == 'school' else url_for('school_detail', sid=sid)
     return redirect(back)
+
+@app.route('/teachers/<int:tid>/edit', methods=['POST'])
+@login_required
+def edit_teacher(tid):
+    db = get_db()
+    row = db.execute('SELECT school_id FROM teachers WHERE id=%s', [tid]).fetchone()
+    if not row:
+        db.close()
+        return redirect(url_for('school_home'))
+    sid = row['school_id']
+    if session.get('role') == 'school' and session.get('school_id') != sid:
+        flash('ไม่มีสิทธิ์', 'danger')
+        db.close()
+        return redirect(url_for('school_home'))
+    name     = request.form['name'].strip()
+    position = request.form.get('position', 'ครู').strip()
+    if name:
+        db.execute('UPDATE teachers SET name=%s, position=%s WHERE id=%s', [name, position, tid])
+        db.commit()
+    db.close()
+    return redirect(url_for('school_home') if session.get('role') == 'school' else url_for('school_detail', sid=sid))
 
 @app.route('/teachers/<int:tid>/delete', methods=['POST'])
 @login_required

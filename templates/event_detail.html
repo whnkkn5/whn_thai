@@ -76,14 +76,13 @@
       <div class="card-body p-0">
         {% if participants %}
         <table class="table table-hover mb-0">
-          <thead><tr><th>#</th><th>ชื่อ</th><th>โรงเรียน</th><th>ชั้น</th><th class="text-center">คะแนน</th><th>รางวัล</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>ชื่อ</th><th>โรงเรียน</th><th class="text-center">คะแนน</th><th>รางวัล</th><th></th></tr></thead>
           <tbody>
             {% for p in participants %}
             <tr>
               <td>{{ loop.index }}</td>
               <td class="fw-semibold">{{ p.student_name }}</td>
               <td>{{ p.school_name }}</td>
-              <td>{{ p.class_level or '-' }}</td>
               <td class="text-center">{{ p.score if p.score is not none else '-' }}</td>
               <td>
                 {% if p.award %}
@@ -224,7 +223,7 @@ function loadStudents(sid) {
     .then(data => {
       sel.innerHTML = '<option value="">-- เลือกนักเรียน --</option>';
       data.forEach(s => {
-        sel.innerHTML += `<option value="${s.id}">${s.name}${s.class_level ? ' ('+s.class_level+')' : ''}</option>`;
+        sel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
       });
     });
 }

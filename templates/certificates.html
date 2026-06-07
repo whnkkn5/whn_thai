@@ -151,7 +151,7 @@
 {% for c in student_certs %}
 {{ render_cert(st_tmpl, {
   'name':   c.student_name,
-  'school': ('ชั้น ' ~ c.class_level ~ ' ' if c.class_level else '') ~ 'โรงเรียน' ~ c.school_name,
+  'school': 'โรงเรียน' ~ c.school_name,
   'award':  c.award,
   'event':  'การแข่งขัน' ~ c.event_name,
   'date':   thai_date,

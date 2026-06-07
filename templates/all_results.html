@@ -65,7 +65,6 @@
                 </td>
                 <td>
                   <span class="fw-semibold">{{ p.student_name }}</span>
-                  {% if p.class_level %}<span class="text-muted small ms-1">({{ p.class_level }})</span>{% endif %}
                   {% if my_school_id and p.school_id == my_school_id %}
                   <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem">โรงเรียนของฉัน</span>
                   {% endif %}
