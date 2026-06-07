@@ -2,6 +2,14 @@
 
 ระบบจัดการการแข่งขันวิชาการ พร้อมออกเกียรติบัตรอัตโนมัติ สำหรับศูนย์เครือข่ายโรงเรียน
 
+## 🚀 Deploy ได้เลย
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/whnkkn5/whn_thai)
+
+> คลิกปุ่มด้านบน → เข้าสู่ระบบ Render → Deploy ได้ทันที
+
+---
+
 ## ฟีเจอร์หลัก
 
 - **จัดการกิจกรรม** — เพิ่มกิจกรรมแยกตามระดับ ป.1-3 / ป.4-6 / ม.1-3
@@ -22,12 +30,7 @@
 | ≥ 60 | 🥉 เหรียญทองแดง |
 | < 60 | เข้าร่วม |
 
-## วิธีติดตั้งและรัน
-
-### ต้องการ
-- Python 3.9+
-
-### ติดตั้ง
+## วิธีรันบนเครื่องตัวเอง
 
 ```bash
 git clone https://github.com/whnkkn5/whn_thai.git
@@ -42,30 +45,13 @@ python app.py
 
 ```
 ├── app.py              # Flask application หลัก
+├── Procfile            # สำหรับ deploy (Render / Railway)
+├── render.yaml         # Render configuration
 ├── requirements.txt    # Python dependencies
 ├── static/
 │   └── style.css       # สไตล์และดีไซน์เกียรติบัตร
-└── templates/
-    ├── base.html           # Layout หลัก
-    ├── index.html          # แดชบอร์ด
-    ├── settings.html       # ตั้งค่าการแข่งขัน
-    ├── events.html         # จัดการกิจกรรม
-    ├── event_detail.html   # รายละเอียดกิจกรรม
-    ├── schools.html        # จัดการโรงเรียน
-    ├── school_detail.html  # รายละเอียดโรงเรียน
-    ├── judges.html         # คณะกรรมการ
-    ├── scores.html         # กรอกคะแนน
-    ├── results.html        # ผลการแข่งขัน
-    └── certificates.html   # พิมพ์เกียรติบัตร
+└── templates/          # HTML templates (11 หน้า)
 ```
-
-## วิธีใช้งาน
-
-1. ไปที่ **ตั้งค่าการแข่งขัน** — กรอกชื่องาน วันที่ และลายเซ็นผู้มอบเกียรติบัตร
-2. เพิ่ม **โรงเรียน** พร้อมนักเรียนและครู
-3. เพิ่ม **กิจกรรม** และกำหนดผู้เข้าแข่งขัน / ครูผู้ฝึกสอน / กรรมการ
-4. **กรอกคะแนน** — ระบบคำนวณรางวัลและอันดับอัตโนมัติ
-5. ไปที่ **พิมพ์เกียรติบัตร** — กรองตามโรงเรียนหรือกิจกรรม แล้ว Ctrl+P
 
 ## Tech Stack
 
