@@ -1,12 +1,82 @@
 {% extends "base.html" %}
 {% block title %}พิมพ์เกียรติบัตร{% endblock %}
-{% block content %}
 
-<!-- Print Controls (hidden on print) -->
+{% macro render_cert(tmpl_info, fields_data) %}
+{% if tmpl_info %}
+{# ── Template-based certificate ── #}
+<div class="cert-tmpl no-print-border" style="position:relative; display:inline-block; width:100%; page-break-after:always;">
+  <img src="{{ url_for('serve_template_image', tid=tmpl_info.id) }}" style="width:100%; display:block;">
+  {% for f in tmpl_info.config %}
+  {% if fields_data.get(f.key) %}
+  <div style="position:absolute;
+              left:{{ f.x }}%;
+              top:{{ f.y }}%;
+              transform:translate(-50%,-50%);
+              font-size:{{ f.size }}px;
+              font-weight:{{ 'bold' if f.bold else 'normal' }};
+              color:{{ f.color }};
+              font-family:'Sarabun','TH Sarabun New',sans-serif;
+              white-space:nowrap;
+              text-align:center;
+              pointer-events:none;">
+    {{ fields_data[f.key] }}
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% else %}
+{# ── CSS fallback certificate ── #}
+<div class="cert-page">
+  <div class="cert-corner cert-corner-tl"></div>
+  <div class="cert-corner cert-corner-tr"></div>
+  <div class="cert-corner cert-corner-bl"></div>
+  <div class="cert-corner cert-corner-br"></div>
+  <div class="cert-header">
+    <div class="cert-org">{{ settings.network_name }}</div>
+    <div class="cert-title">เกียรติบัตร</div>
+    <div class="cert-subtitle">ขอมอบเกียรติบัตรฉบับนี้ให้แก่</div>
+  </div>
+  <div class="cert-body">
+    <div class="cert-name">{{ fields_data.name }}</div>
+    {% if fields_data.position %}<div class="cert-school">{{ fields_data.position }}</div>{% endif %}
+    {% if fields_data.school %}<div class="cert-school">{{ fields_data.school }}</div>{% endif %}
+    <div class="cert-text">{{ fields_data.body | safe }}</div>
+    {% if fields_data.award %}
+    <div class="cert-award-wrap">
+      <span class="cert-medal">{{ fields_data.award | award_icon }}</span>
+      <span class="cert-award {{ fields_data.award | award_css }}">{{ fields_data.award }}</span>
+    </div>
+    {% endif %}
+    <div class="cert-text">{{ settings.competition_name }}</div>
+  </div>
+  <div class="cert-date">วันที่ {{ thai_date }}</div>
+  <div class="cert-footer">
+    {% if settings.signer1_name %}
+    <div class="cert-sign">
+      <div class="cert-sign-line"></div>
+      <div class="cert-sign-name">{{ settings.signer1_name }}</div>
+      <div class="cert-sign-pos">{{ settings.signer1_position }}</div>
+    </div>
+    {% endif %}
+    {% if settings.signer2_name %}
+    <div class="cert-sign">
+      <div class="cert-sign-line"></div>
+      <div class="cert-sign-name">{{ settings.signer2_name }}</div>
+      <div class="cert-sign-pos">{{ settings.signer2_position }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% block content %}
+<!-- Print Controls -->
 <div class="print-controls no-print">
   <div class="d-flex align-items-center gap-3 flex-wrap w-100">
     <strong><i class="bi bi-award me-1"></i>พิมพ์เกียรติบัตร</strong>
 
+    {% if not is_school %}
     <form method="GET" class="d-flex gap-2 flex-wrap">
       <select name="school_id" class="form-select form-select-sm" style="width:200px">
         <option value="">ทุกโรงเรียน</option>
@@ -17,25 +87,54 @@
         {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{{ e.name }} ({{ e.level }})</option>{% endfor %}
       </select>
       <select name="type" class="form-select form-select-sm" style="width:180px">
-        <option value="all"    {{ 'selected' if cert_type=='all' }}>ทุกประเภท</option>
+        <option value="all"     {{ 'selected' if cert_type=='all' }}>ทุกประเภท</option>
         <option value="student" {{ 'selected' if cert_type=='student' }}>นักเรียน</option>
         <option value="coach"   {{ 'selected' if cert_type=='coach' }}>ครูผู้ฝึกสอน</option>
         <option value="judge"   {{ 'selected' if cert_type=='judge' }}>กรรมการ</option>
       </select>
-      <button class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-filter me-1"></i>กรอง
-      </button>
+      <button class="btn btn-outline-primary btn-sm"><i class="bi bi-filter me-1"></i>กรอง</button>
     </form>
+    {% else %}
+    <form method="GET" class="d-flex gap-2 flex-wrap">
+      <select name="event_id" class="form-select form-select-sm" style="width:220px">
+        <option value="">ทุกกิจกรรม</option>
+        {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{{ e.name }} ({{ e.level }})</option>{% endfor %}
+      </select>
+      <select name="type" class="form-select form-select-sm" style="width:180px">
+        <option value="all"    {{ 'selected' if cert_type=='all' }}>ทุกประเภท</option>
+        <option value="student" {{ 'selected' if cert_type=='student' }}>นักเรียน</option>
+        <option value="coach"   {{ 'selected' if cert_type=='coach' }}>ครูผู้ฝึกสอน</option>
+      </select>
+      <button class="btn btn-outline-primary btn-sm"><i class="bi bi-filter me-1"></i>กรอง</button>
+    </form>
+    {% endif %}
 
-    <div class="ms-auto d-flex gap-2">
-      <span class="text-muted small align-self-center">
-        {{ student_certs|length + coach_certs|length + judge_certs|length }} ใบ
-      </span>
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      {% set total = student_certs|length + coach_certs|length + judge_certs|length %}
+      <span class="text-muted small">{{ total }} ใบ</span>
+      {% if not is_school %}
+      <a href="{{ url_for('admin_templates') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-image me-1"></i>จัดการ Template
+      </a>
+      {% endif %}
       <button onclick="window.print()" class="btn btn-danger">
-        <i class="bi bi-printer me-1"></i>พิมพ์ทั้งหมด
+        <i class="bi bi-printer me-1"></i>พิมพ์
       </button>
     </div>
   </div>
+
+  <!-- Template status indicators -->
+  {% if not is_school %}
+  <div class="d-flex gap-2 mt-2 flex-wrap" style="font-size:.8rem">
+    {% for t, label in [('student','นักเรียน'),('coach','ครูผู้ฝึกสอน'),('judge','กรรมการ')] %}
+    {% if active_templates.get(t) %}
+    <span class="badge bg-success"><i class="bi bi-image me-1"></i>{{ label }}: ใช้ Template</span>
+    {% else %}
+    <span class="badge bg-light text-muted"><i class="bi bi-code-square me-1"></i>{{ label }}: CSS fallback</span>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
 
 {% set total = student_certs|length + coach_certs|length + judge_certs|length %}
@@ -47,168 +146,49 @@
 </div>
 {% endif %}
 
-<!-- ════════════════════════════════
-     STUDENT CERTIFICATES
-     ════════════════════════════════ -->
+{# ════ STUDENT CERTS ════ #}
 {% if cert_type in ['all', 'student'] %}
+{% set st_tmpl = active_templates.get('student') %}
 {% for c in student_certs %}
-<div class="cert-page">
-  <div class="cert-corner cert-corner-tl"></div>
-  <div class="cert-corner cert-corner-tr"></div>
-  <div class="cert-corner cert-corner-bl"></div>
-  <div class="cert-corner cert-corner-br"></div>
-
-  <div class="cert-header">
-    <div class="cert-org">{{ settings.network_name }}</div>
-    <div class="cert-title">เกียรติบัตร</div>
-    <div class="cert-subtitle">ขอมอบเกียรติบัตรฉบับนี้ให้แก่</div>
-  </div>
-
-  <div class="cert-body">
-    <div class="cert-name">{{ c.student_name }}</div>
-    <div class="cert-school">
-      {% if c.class_level %}ชั้น {{ c.class_level }} {% endif %}โรงเรียน{{ c.school_name }}
-    </div>
-    <div class="cert-text">ได้รับรางวัล</div>
-    <div class="cert-award-wrap">
-      <span class="cert-medal">{{ c.award|award_icon }}</span>
-      <span class="cert-award {{ c.award|award_css }}">{{ c.award }}</span>
-    </div>
-    <div class="cert-text">
-      การแข่งขัน<span class="cert-event">{{ c.event_name }}</span>
-      ระดับ {{ c.event_level }}<br>
-      {{ settings.competition_name }}
-    </div>
-  </div>
-
-  <div class="cert-date">วันที่ {{ thai_date }}</div>
-
-  <div class="cert-footer">
-    {% if settings.signer1_name %}
-    <div class="cert-sign">
-      <div class="cert-sign-line"></div>
-      <div class="cert-sign-name">{{ settings.signer1_name }}</div>
-      <div class="cert-sign-pos">{{ settings.signer1_position }}</div>
-    </div>
-    {% endif %}
-    {% if settings.signer2_name %}
-    <div class="cert-sign">
-      <div class="cert-sign-line"></div>
-      <div class="cert-sign-name">{{ settings.signer2_name }}</div>
-      <div class="cert-sign-pos">{{ settings.signer2_position }}</div>
-    </div>
-    {% endif %}
-  </div>
-</div>
+{{ render_cert(st_tmpl, {
+  'name':   c.student_name,
+  'school': ('ชั้น ' ~ c.class_level ~ ' ' if c.class_level else '') ~ 'โรงเรียน' ~ c.school_name,
+  'award':  c.award,
+  'event':  'การแข่งขัน' ~ c.event_name ~ ' ระดับ ' ~ c.event_level,
+  'date':   thai_date,
+  'body':   'ได้รับรางวัล'
+}) }}
 {% endfor %}
 {% endif %}
 
-<!-- ════════════════════════════════
-     COACH CERTIFICATES
-     ════════════════════════════════ -->
+{# ════ COACH CERTS ════ #}
 {% if cert_type in ['all', 'coach'] %}
+{% set co_tmpl = active_templates.get('coach') %}
 {% for c in coach_certs %}
-<div class="cert-page">
-  <div class="cert-corner cert-corner-tl"></div>
-  <div class="cert-corner cert-corner-tr"></div>
-  <div class="cert-corner cert-corner-bl"></div>
-  <div class="cert-corner cert-corner-br"></div>
-
-  <div class="cert-header">
-    <div class="cert-org">{{ settings.network_name }}</div>
-    <div class="cert-title">เกียรติบัตร</div>
-    <div class="cert-subtitle">ขอมอบเกียรติบัตรฉบับนี้ให้แก่</div>
-  </div>
-
-  <div class="cert-body">
-    <div class="cert-name">{{ c.teacher_name }}</div>
-    <div class="cert-school">{{ c.position }} โรงเรียน{{ c.school_name }}</div>
-    <div class="cert-text mt-2">
-      ที่ได้ฝึกซ้อมนักเรียนเข้าร่วมการแข่งขัน<br>
-      <span class="cert-event">{{ c.event_name }}</span> ระดับ {{ c.event_level }}<br>
-      {% if c.best_award %}
-      นักเรียนได้รับรางวัล
-      <span class="cert-award {{ c.best_award|award_css }}" style="font-size:1rem; padding:2mm 6mm">
-        {{ c.best_award }}
-      </span><br>
-      {% endif %}
-      {{ settings.competition_name }}
-    </div>
-  </div>
-
-  <div class="cert-date">วันที่ {{ thai_date }}</div>
-
-  <div class="cert-footer">
-    {% if settings.signer1_name %}
-    <div class="cert-sign">
-      <div class="cert-sign-line"></div>
-      <div class="cert-sign-name">{{ settings.signer1_name }}</div>
-      <div class="cert-sign-pos">{{ settings.signer1_position }}</div>
-    </div>
-    {% endif %}
-    {% if settings.signer2_name %}
-    <div class="cert-sign">
-      <div class="cert-sign-line"></div>
-      <div class="cert-sign-name">{{ settings.signer2_name }}</div>
-      <div class="cert-sign-pos">{{ settings.signer2_position }}</div>
-    </div>
-    {% endif %}
-  </div>
-</div>
+{{ render_cert(co_tmpl, {
+  'name':     c.teacher_name,
+  'position': c.position ~ ' โรงเรียน' ~ c.school_name,
+  'school':   'โรงเรียน' ~ c.school_name,
+  'event':    'การแข่งขัน' ~ c.event_name ~ ' ระดับ ' ~ c.event_level,
+  'award':    c.best_award or '',
+  'date':     thai_date,
+  'body':     'ที่ได้ฝึกซ้อมนักเรียนเข้าร่วมการแข่งขัน'
+}) }}
 {% endfor %}
 {% endif %}
 
-<!-- ════════════════════════════════
-     JUDGE CERTIFICATES
-     ════════════════════════════════ -->
+{# ════ JUDGE CERTS ════ #}
 {% if cert_type in ['all', 'judge'] %}
+{% set ju_tmpl = active_templates.get('judge') %}
 {% for c in judge_certs %}
-<div class="cert-page">
-  <div class="cert-corner cert-corner-tl"></div>
-  <div class="cert-corner cert-corner-tr"></div>
-  <div class="cert-corner cert-corner-bl"></div>
-  <div class="cert-corner cert-corner-br"></div>
-
-  <div class="cert-header">
-    <div class="cert-org">{{ settings.network_name }}</div>
-    <div class="cert-title">เกียรติบัตร</div>
-    <div class="cert-subtitle">ขอมอบเกียรติบัตรฉบับนี้ให้แก่</div>
-  </div>
-
-  <div class="cert-body">
-    <div class="cert-name">{{ c.judge_name }}</div>
-    <div class="cert-school">{{ c.position }}</div>
-    <div class="cert-text mt-2">
-      ที่ได้ปฏิบัติหน้าที่เป็น<br>
-      <strong>คณะกรรมการตัดสิน</strong><br>
-      การแข่งขัน<span class="cert-event">{{ c.event_name }}</span>
-      ระดับ {{ c.event_level }}<br>
-      {{ settings.competition_name }}
-    </div>
-    <div class="cert-award-wrap mt-2">
-      <span class="cert-award judge-cert">คณะกรรมการตัดสิน</span>
-    </div>
-  </div>
-
-  <div class="cert-date">วันที่ {{ thai_date }}</div>
-
-  <div class="cert-footer">
-    {% if settings.signer1_name %}
-    <div class="cert-sign">
-      <div class="cert-sign-line"></div>
-      <div class="cert-sign-name">{{ settings.signer1_name }}</div>
-      <div class="cert-sign-pos">{{ settings.signer1_position }}</div>
-    </div>
-    {% endif %}
-    {% if settings.signer2_name %}
-    <div class="cert-sign">
-      <div class="cert-sign-line"></div>
-      <div class="cert-sign-name">{{ settings.signer2_name }}</div>
-      <div class="cert-sign-pos">{{ settings.signer2_position }}</div>
-    </div>
-    {% endif %}
-  </div>
-</div>
+{{ render_cert(ju_tmpl, {
+  'name':     c.judge_name,
+  'position': c.position,
+  'event':    'การแข่งขัน' ~ c.event_name ~ ' ระดับ ' ~ c.event_level,
+  'date':     thai_date,
+  'body':     'ที่ได้ปฏิบัติหน้าที่เป็นคณะกรรมการตัดสิน',
+  'award':    ''
+}) }}
 {% endfor %}
 {% endif %}
 

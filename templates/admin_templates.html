@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Template เกียรติบัตร{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-image me-2"></i>Template เกียรติบัตร</h1>
+
+<div class="row g-4">
+  <!-- Upload form -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header bg-success text-white">อัปโหลด Template ใหม่</div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('admin_upload_template') }}" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">ชื่อ Template</label>
+            <input name="name" class="form-control" placeholder="เช่น เกียรติบัตรนักเรียน 2567" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">ประเภท</label>
+            <select name="cert_type" class="form-select" required>
+              <option value="student">🎓 นักเรียน</option>
+              <option value="coach">👩‍🏫 ครูผู้ฝึกสอน</option>
+              <option value="judge">📋 กรรมการ</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">ไฟล์รูป Template</label>
+            <input name="image" type="file" class="form-control" accept="image/*" required>
+            <small class="text-muted">PNG, JPG — แนะนำ A5 landscape (210×148 mm)</small>
+          </div>
+          <button class="btn btn-success w-100">
+            <i class="bi bi-upload me-1"></i>อัปโหลดและจัดวางข้อความ
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="alert alert-info mt-3 small">
+      <i class="bi bi-lightbulb me-1"></i>
+      <strong>วิธีใช้:</strong><br>
+      1. ออกแบบเกียรติบัตรใน Word / Canva / Illustrator<br>
+      2. Export เป็น PNG หรือ JPG<br>
+      3. Upload และกำหนดตำแหน่งข้อความด้วยการลาก<br>
+      4. กด "เปิดใช้งาน" เพื่อใช้งานจริง
+    </div>
+  </div>
+
+  <!-- Template list -->
+  <div class="col-md-8">
+    {% for cert_type, label in [('student','🎓 นักเรียน'), ('coach','👩‍🏫 ครูผู้ฝึกสอน'), ('judge','📋 กรรมการ')] %}
+    {% set type_tmpls = templates | selectattr('cert_type','equalto',cert_type) | list %}
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">{{ label }}</div>
+      <div class="card-body p-0">
+        {% if type_tmpls %}
+        <table class="table table-hover mb-0">
+          <thead><tr><th>ชื่อ Template</th><th class="text-center">สถานะ</th><th class="text-center">วันที่</th><th></th></tr></thead>
+          <tbody>
+            {% for t in type_tmpls %}
+            <tr>
+              <td class="fw-semibold">
+                <a href="{{ url_for('admin_template_edit', tid=t.id) }}" class="text-decoration-none">
+                  {{ t.name }}
+                </a>
+              </td>
+              <td class="text-center">
+                {% if t.is_active %}
+                  <span class="badge bg-success">ใช้งานอยู่</span>
+                {% else %}
+                  <span class="badge bg-light text-muted">ไม่ใช้งาน</span>
+                {% endif %}
+              </td>
+              <td class="text-center text-muted small">{{ t.created_at[:10] if t.created_at else '—' }}</td>
+              <td class="text-end">
+                <a href="{{ url_for('admin_template_edit', tid=t.id) }}" class="btn btn-sm btn-outline-primary me-1">
+                  <i class="bi bi-pencil"></i> จัดวาง
+                </a>
+                {% if t.is_active %}
+                <form method="POST" action="{{ url_for('admin_deactivate_template', tid=t.id) }}" class="d-inline">
+                  <button class="btn btn-sm btn-outline-warning me-1">ปิด</button>
+                </form>
+                {% else %}
+                <form method="POST" action="{{ url_for('admin_activate_template', tid=t.id) }}" class="d-inline">
+                  <button class="btn btn-sm btn-success me-1">เปิดใช้</button>
+                </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('admin_delete_template', tid=t.id) }}"
+                      class="d-inline" onsubmit="return confirm('ลบ template นี้?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-3 text-muted small">ยังไม่มี template — อัปโหลดที่ฟอร์มด้านซ้าย</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -42,6 +42,8 @@
     <div class="nav-section">จัดการระบบ</div>
     <a href="{{ url_for('admin_users') }}" class="{{ 'active' if request.endpoint=='admin_users' }}">
       <i class="bi bi-people"></i> จัดการผู้ใช้งาน</a>
+    <a href="{{ url_for('admin_templates') }}" class="{{ 'active' if 'template' in (request.endpoint or '') }}">
+      <i class="bi bi-image"></i> Template เกียรติบัตร</a>
 
     {% else %}
     <!-- ── School User Navigation ── -->

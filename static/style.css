@@ -179,6 +179,13 @@ body { font-family: 'Sarabun', 'TH Sarabun New', Sarabun, sans-serif;
   flex-wrap: wrap;
 }
 
+.cert-tmpl {
+  margin: 0 auto 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  page-break-after: always;
+  max-width: 100%;
+}
+
 /* ── Print media ─────────────────────────────────────── */
 @media print {
   body { background: #fff; margin: 0; }
@@ -190,5 +197,11 @@ body { font-family: 'Sarabun', 'TH Sarabun New', Sarabun, sans-serif;
     box-shadow: none; page-break-after: always;
     margin: 0; padding: 12mm 16mm;
   }
+  .cert-tmpl {
+    box-shadow: none;
+    margin: 0;
+    width: 100%;
+  }
+  .cert-tmpl img { width: 100% !important; }
   @page { size: A5 landscape; margin: 0; }
 }

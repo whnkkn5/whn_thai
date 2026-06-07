@@ -89,6 +89,16 @@ def init_db():
             judge_id INTEGER REFERENCES judges(id) ON DELETE CASCADE,
             UNIQUE(event_id, judge_id)
         );
+        CREATE TABLE IF NOT EXISTS cert_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            cert_type TEXT NOT NULL,
+            image_data TEXT NOT NULL,
+            image_mime TEXT DEFAULT 'image/png',
+            config TEXT DEFAULT '[]',
+            is_active INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
     ''')
 
     # Create default admin if none exists
@@ -737,6 +747,7 @@ def certificates():
         jq += ' ORDER BY e.level,e.name,j.name'
         judge_certs = db.execute(jq, jp).fetchall()
 
+    active_templates = get_active_templates()
     db.close()
     return render_template('certificates.html',
         settings=settings,
@@ -747,6 +758,7 @@ def certificates():
         selected_school=school_id,
         selected_event=event_id,
         cert_type=cert_type,
+        active_templates=active_templates,
         is_school=is_school,
         thai_date=format_thai_date(settings.get('competition_date','')))
 
@@ -771,6 +783,142 @@ def api_teachers(sid):
     ).fetchall()
     db.close()
     return jsonify([dict(r) for r in rows])
+
+# ── Certificate Templates ─────────────────────────────────
+
+TEMPLATE_FIELDS = {
+    'student': [
+        {'key':'name',   'label':'ชื่อ-สกุล',          'x':50,'y':42,'size':32,'bold':True, 'color':'#1a1a1a'},
+        {'key':'school', 'label':'โรงเรียน',            'x':50,'y':52,'size':22,'bold':False,'color':'#333333'},
+        {'key':'award',  'label':'รางวัล',              'x':50,'y':62,'size':28,'bold':True, 'color':'#8b6914'},
+        {'key':'event',  'label':'กิจกรรม + ระดับ',     'x':50,'y':71,'size':20,'bold':False,'color':'#1a5276'},
+        {'key':'date',   'label':'วันที่',              'x':50,'y':83,'size':16,'bold':False,'color':'#666666'},
+    ],
+    'coach': [
+        {'key':'name',     'label':'ชื่อ-สกุล',         'x':50,'y':42,'size':32,'bold':True, 'color':'#1a1a1a'},
+        {'key':'position', 'label':'ตำแหน่ง + โรงเรียน','x':50,'y':52,'size':20,'bold':False,'color':'#333333'},
+        {'key':'event',    'label':'กิจกรรม + ระดับ',   'x':50,'y':63,'size':20,'bold':False,'color':'#1a5276'},
+        {'key':'award',    'label':'รางวัลที่ได้รับ',   'x':50,'y':73,'size':24,'bold':True, 'color':'#8b6914'},
+        {'key':'date',     'label':'วันที่',            'x':50,'y':84,'size':16,'bold':False,'color':'#666666'},
+    ],
+    'judge': [
+        {'key':'name',     'label':'ชื่อ-สกุล',         'x':50,'y':42,'size':32,'bold':True, 'color':'#1a1a1a'},
+        {'key':'position', 'label':'ตำแหน่ง',           'x':50,'y':52,'size':22,'bold':False,'color':'#333333'},
+        {'key':'event',    'label':'กิจกรรม + ระดับ',   'x':50,'y':65,'size':20,'bold':False,'color':'#1a5276'},
+        {'key':'date',     'label':'วันที่',            'x':50,'y':82,'size':16,'bold':False,'color':'#666666'},
+    ],
+}
+
+import json, base64
+from flask import send_file
+import io
+
+@app.route('/admin/templates')
+@admin_required
+def admin_templates():
+    db = get_db()
+    tmpls = db.execute(
+        'SELECT id,name,cert_type,is_active,created_at FROM cert_templates ORDER BY cert_type,name'
+    ).fetchall()
+    db.close()
+    return render_template('admin_templates.html', templates=tmpls,
+                           type_labels={'student':'นักเรียน','coach':'ครูผู้ฝึกสอน','judge':'กรรมการ'})
+
+@app.route('/admin/templates/upload', methods=['POST'])
+@admin_required
+def admin_upload_template():
+    name      = request.form['name'].strip()
+    cert_type = request.form['cert_type']
+    f         = request.files.get('image')
+    if not name or not cert_type or not f or not f.filename:
+        flash('กรุณากรอกข้อมูลให้ครบและเลือกไฟล์รูป', 'warning')
+        return redirect(url_for('admin_templates'))
+    img_data  = base64.b64encode(f.read()).decode('utf-8')
+    mime      = f.content_type or 'image/png'
+    config    = json.dumps(TEMPLATE_FIELDS.get(cert_type, TEMPLATE_FIELDS['student']))
+    db = get_db()
+    db.execute(
+        'INSERT INTO cert_templates (name,cert_type,image_data,image_mime,config,is_active) VALUES (?,?,?,?,?,0)',
+        [name, cert_type, img_data, mime, config]
+    )
+    db.commit()
+    tid = db.execute('SELECT last_insert_rowid()').fetchone()[0]
+    db.close()
+    flash(f'อัปโหลด "{name}" สำเร็จ — จัดวางตำแหน่งข้อความได้เลย', 'success')
+    return redirect(url_for('admin_template_edit', tid=tid))
+
+@app.route('/admin/templates/<int:tid>/edit')
+@admin_required
+def admin_template_edit(tid):
+    db = get_db()
+    tmpl = db.execute('SELECT * FROM cert_templates WHERE id=?', [tid]).fetchone()
+    db.close()
+    if not tmpl:
+        flash('ไม่พบ template', 'danger')
+        return redirect(url_for('admin_templates'))
+    config = json.loads(tmpl['config'])
+    return render_template('admin_template_editor.html', tmpl=tmpl, config=config,
+                           type_labels={'student':'นักเรียน','coach':'ครูผู้ฝึกสอน','judge':'กรรมการ'})
+
+@app.route('/admin/templates/<int:tid>/save', methods=['POST'])
+@admin_required
+def admin_save_template(tid):
+    data   = request.get_json()
+    config = json.dumps(data.get('config', []))
+    db = get_db()
+    db.execute('UPDATE cert_templates SET config=? WHERE id=?', [config, tid])
+    db.commit()
+    db.close()
+    return jsonify({'ok': True})
+
+@app.route('/admin/templates/<int:tid>/activate', methods=['POST'])
+@admin_required
+def admin_activate_template(tid):
+    db = get_db()
+    cert_type = db.execute('SELECT cert_type FROM cert_templates WHERE id=?', [tid]).fetchone()['cert_type']
+    db.execute('UPDATE cert_templates SET is_active=0 WHERE cert_type=?', [cert_type])
+    db.execute('UPDATE cert_templates SET is_active=1 WHERE id=?', [tid])
+    db.commit()
+    db.close()
+    flash('เปิดใช้งาน template แล้ว', 'success')
+    return redirect(url_for('admin_templates'))
+
+@app.route('/admin/templates/<int:tid>/deactivate', methods=['POST'])
+@admin_required
+def admin_deactivate_template(tid):
+    db = get_db()
+    db.execute('UPDATE cert_templates SET is_active=0 WHERE id=?', [tid])
+    db.commit()
+    db.close()
+    return redirect(url_for('admin_templates'))
+
+@app.route('/admin/templates/<int:tid>/delete', methods=['POST'])
+@admin_required
+def admin_delete_template(tid):
+    db = get_db()
+    db.execute('DELETE FROM cert_templates WHERE id=?', [tid])
+    db.commit()
+    db.close()
+    flash('ลบ template แล้ว', 'info')
+    return redirect(url_for('admin_templates'))
+
+@app.get('/uploads/template/<int:tid>')
+def serve_template_image(tid):
+    db = get_db()
+    row = db.execute('SELECT image_data, image_mime FROM cert_templates WHERE id=?', [tid]).fetchone()
+    db.close()
+    if not row:
+        return '', 404
+    img_bytes = base64.b64decode(row['image_data'])
+    return send_file(io.BytesIO(img_bytes), mimetype=row['image_mime'])
+
+def get_active_templates():
+    db = get_db()
+    rows = db.execute(
+        'SELECT id, cert_type, config FROM cert_templates WHERE is_active=1'
+    ).fetchall()
+    db.close()
+    return {r['cert_type']: {'id': r['id'], 'config': json.loads(r['config'])} for r in rows}
 
 # ─────────────────────────────────────────────────────────
 

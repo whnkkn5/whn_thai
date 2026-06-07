@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}จัดวาง — {{ tmpl.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-1">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin_templates') }}">Template</a></li>
+        <li class="breadcrumb-item active">{{ tmpl.name }}</li>
+      </ol>
+    </nav>
+    <h1 class="page-title mb-0">จัดวางตำแหน่งข้อความ</h1>
+  </div>
+  <div class="d-flex gap-2">
+    <button id="btn-save" class="btn btn-primary">
+      <i class="bi bi-save me-1"></i>บันทึก
+    </button>
+    {% if tmpl.is_active %}
+    <span class="badge bg-success align-self-center fs-6">ใช้งานอยู่</span>
+    {% else %}
+    <form method="POST" action="{{ url_for('admin_activate_template', tid=tmpl.id) }}">
+      <button class="btn btn-success"><i class="bi bi-check-circle me-1"></i>เปิดใช้งาน</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Preview canvas -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-eye me-1"></i>Preview — ลากข้อความเพื่อจัดตำแหน่ง</span>
+        <small class="text-muted">คลิกที่ label แล้วลาก</small>
+      </div>
+      <div class="card-body p-2">
+        <div id="preview-wrap" style="position:relative; display:inline-block; width:100%; user-select:none;">
+          <img id="preview-img" src="{{ url_for('serve_template_image', tid=tmpl.id) }}"
+               style="width:100%; display:block; border-radius:4px;">
+          {% for f in config %}
+          <div class="field-label" data-key="{{ f.key }}"
+               style="position:absolute;
+                      left:{{ f.x }}%;
+                      top:{{ f.y }}%;
+                      transform:translate(-50%,-50%);
+                      font-size:calc({{ f.size }}px * 0.5);
+                      font-weight:{{ 'bold' if f.bold else 'normal' }};
+                      color:{{ f.color }};
+                      cursor:grab;
+                      white-space:nowrap;
+                      text-shadow: 0 0 4px rgba(255,255,255,.9), 0 0 2px rgba(255,255,255,.9);
+                      padding:2px 6px;
+                      border:1.5px dashed rgba(0,0,0,.3);
+                      border-radius:4px;
+                      background:rgba(255,255,255,.25);">
+            {{ f.label }}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls panel -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-sliders me-1"></i>ปรับแต่งข้อความแต่ละช่อง</div>
+      <div class="card-body p-2" style="max-height:70vh; overflow-y:auto;">
+        {% for f in config %}
+        <div class="field-card border rounded p-2 mb-2" data-key="{{ f.key }}"
+             style="cursor:pointer; transition:.15s"
+             onclick="selectField('{{ f.key }}')">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-semibold small" style="color:{{ f.color }}">{{ f.label }}</span>
+            <span class="badge bg-light text-muted small" id="pos_{{ f.key }}">
+              {{ f.x|round(1) }}%, {{ f.y|round(1) }}%
+            </span>
+          </div>
+          <div class="row g-1">
+            <div class="col-6">
+              <label class="form-label mb-0" style="font-size:.7rem">X %</label>
+              <input type="number" id="x_{{ f.key }}" class="form-control form-control-sm"
+                     value="{{ f.x }}" min="0" max="100" step="0.5"
+                     onchange="updateFieldPos('{{ f.key }}')">
+            </div>
+            <div class="col-6">
+              <label class="form-label mb-0" style="font-size:.7rem">Y %</label>
+              <input type="number" id="y_{{ f.key }}" class="form-control form-control-sm"
+                     value="{{ f.y }}" min="0" max="100" step="0.5"
+                     onchange="updateFieldPos('{{ f.key }}')">
+            </div>
+            <div class="col-6">
+              <label class="form-label mb-0" style="font-size:.7rem">ขนาด (px)</label>
+              <input type="number" id="size_{{ f.key }}" class="form-control form-control-sm"
+                     value="{{ f.size }}" min="8" max="120" step="1"
+                     onchange="updateFieldStyle('{{ f.key }}')">
+            </div>
+            <div class="col-6">
+              <label class="form-label mb-0" style="font-size:.7rem">สี</label>
+              <input type="color" id="color_{{ f.key }}" class="form-control form-control-sm form-control-color"
+                     value="{{ f.color }}"
+                     onchange="updateFieldStyle('{{ f.key }}')">
+            </div>
+            <div class="col-12">
+              <div class="form-check form-switch mt-1">
+                <input class="form-check-input" type="checkbox" id="bold_{{ f.key }}"
+                       {{ 'checked' if f.bold else '' }}
+                       onchange="updateFieldStyle('{{ f.key }}')">
+                <label class="form-check-label small" for="bold_{{ f.key }}">ตัวหนา</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="alert alert-success mt-2 small py-2">
+      <i class="bi bi-check2-circle me-1"></i>
+      กด <strong>บันทึก</strong> แล้ว <strong>เปิดใช้งาน</strong> เพื่อให้ระบบใช้ template นี้ออกเกียรติบัตร
+    </div>
+  </div>
+</div>
+
+<!-- Store config as JSON -->
+<script>
+const CONFIG = {{ config | tojson }};
+let dragging = null, dragOffX = 0, dragOffY = 0;
+
+const wrap = document.getElementById('preview-wrap');
+
+document.querySelectorAll('.field-label').forEach(el => {
+  el.addEventListener('mousedown', e => {
+    e.preventDefault();
+    dragging = el;
+    el.style.cursor = 'grabbing';
+    const rect = el.getBoundingClientRect();
+    dragOffX = e.clientX - rect.left - rect.width/2;
+    dragOffY = e.clientY - rect.top  - rect.height/2;
+    selectField(el.dataset.key);
+  });
+  // Touch support
+  el.addEventListener('touchstart', e => {
+    e.preventDefault();
+    dragging = el;
+    const t = e.touches[0];
+    const rect = el.getBoundingClientRect();
+    dragOffX = t.clientX - rect.left - rect.width/2;
+    dragOffY = t.clientY - rect.top  - rect.height/2;
+    selectField(el.dataset.key);
+  }, {passive:false});
+});
+
+function getPercent(e) {
+  const r = wrap.getBoundingClientRect();
+  const cx = (e.clientX || e.touches[0].clientX) - dragOffX;
+  const cy = (e.clientY || e.touches[0].clientY) - dragOffY;
+  return {
+    x: Math.min(100, Math.max(0, ((cx - r.left) / r.width)  * 100)),
+    y: Math.min(100, Math.max(0, ((cy - r.top)  / r.height) * 100))
+  };
+}
+
+function applyDrag(e) {
+  if (!dragging) return;
+  const {x, y} = getPercent(e);
+  dragging.style.left = x + '%';
+  dragging.style.top  = y + '%';
+  const key = dragging.dataset.key;
+  document.getElementById('x_' + key).value = x.toFixed(1);
+  document.getElementById('y_' + key).value = y.toFixed(1);
+  document.getElementById('pos_' + key).textContent = x.toFixed(1) + '%, ' + y.toFixed(1) + '%';
+  const cfg = CONFIG.find(f => f.key === key);
+  if (cfg) { cfg.x = parseFloat(x.toFixed(1)); cfg.y = parseFloat(y.toFixed(1)); }
+}
+
+document.addEventListener('mousemove', applyDrag);
+document.addEventListener('touchmove',  applyDrag, {passive:false});
+document.addEventListener('mouseup',  () => { if (dragging) { dragging.style.cursor='grab'; dragging=null; } });
+document.addEventListener('touchend', () => { dragging = null; });
+
+function updateFieldPos(key) {
+  const x = parseFloat(document.getElementById('x_' + key).value);
+  const y = parseFloat(document.getElementById('y_' + key).value);
+  const el = document.querySelector('.field-label[data-key="' + key + '"]');
+  el.style.left = x + '%';
+  el.style.top  = y + '%';
+  document.getElementById('pos_' + key).textContent = x.toFixed(1) + '%, ' + y.toFixed(1) + '%';
+  const cfg = CONFIG.find(f => f.key === key);
+  if (cfg) { cfg.x = x; cfg.y = y; }
+}
+
+function updateFieldStyle(key) {
+  const size  = parseInt(document.getElementById('size_'  + key).value);
+  const color = document.getElementById('color_' + key).value;
+  const bold  = document.getElementById('bold_'  + key).checked;
+  const el    = document.querySelector('.field-label[data-key="' + key + '"]');
+  el.style.fontSize   = 'calc(' + size + 'px * 0.5)';
+  el.style.color      = color;
+  el.style.fontWeight = bold ? 'bold' : 'normal';
+  const cfg = CONFIG.find(f => f.key === key);
+  if (cfg) { cfg.size = size; cfg.color = color; cfg.bold = bold; }
+}
+
+function selectField(key) {
+  document.querySelectorAll('.field-card').forEach(c => c.style.background = '');
+  const card = document.querySelector('.field-card[data-key="' + key + '"]');
+  if (card) {
+    card.style.background = '#e8f4ff';
+    card.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  document.querySelectorAll('.field-label').forEach(l => {
+    l.style.outline = l.dataset.key === key ? '2px solid #0d6efd' : '';
+  });
+}
+
+document.getElementById('btn-save').addEventListener('click', () => {
+  fetch('{{ url_for("admin_save_template", tid=tmpl.id) }}', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({config: CONFIG})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      const btn = document.getElementById('btn-save');
+      btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>บันทึกแล้ว';
+      btn.classList.replace('btn-primary','btn-success');
+      setTimeout(() => {
+        btn.innerHTML = '<i class="bi bi-save me-1"></i>บันทึก';
+        btn.classList.replace('btn-success','btn-primary');
+      }, 2000);
+    }
+  });
+});
+</script>
+{% endblock %}
