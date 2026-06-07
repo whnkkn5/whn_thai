@@ -90,7 +90,6 @@
         <option value="all"     {{ 'selected' if cert_type=='all' }}>ทุกประเภท</option>
         <option value="student" {{ 'selected' if cert_type=='student' }}>นักเรียน</option>
         <option value="coach"   {{ 'selected' if cert_type=='coach' }}>ครูผู้ฝึกสอน</option>
-        <option value="judge"   {{ 'selected' if cert_type=='judge' }}>กรรมการ</option>
       </select>
       <button class="btn btn-outline-primary btn-sm"><i class="bi bi-filter me-1"></i>กรอง</button>
     </form>
@@ -110,7 +109,7 @@
     {% endif %}
 
     <div class="ms-auto d-flex gap-2 align-items-center">
-      {% set total = student_certs|length + coach_certs|length + judge_certs|length %}
+      {% set total = student_certs|length + coach_certs|length %}
       <span class="text-muted small">{{ total }} ใบ</span>
       {% if not is_school %}
       <a href="{{ url_for('admin_templates') }}" class="btn btn-sm btn-outline-secondary">
@@ -126,7 +125,7 @@
   <!-- Template status indicators -->
   {% if not is_school %}
   <div class="d-flex gap-2 mt-2 flex-wrap" style="font-size:.8rem">
-    {% for t, label in [('student','นักเรียน'),('coach','ครูผู้ฝึกสอน'),('judge','กรรมการ')] %}
+    {% for t, label in [('student','นักเรียน'),('coach','ครูผู้ฝึกสอน')] %}
     {% if active_templates.get(t) %}
     <span class="badge bg-success"><i class="bi bi-image me-1"></i>{{ label }}: ใช้ Template</span>
     {% else %}
@@ -137,7 +136,7 @@
   {% endif %}
 </div>
 
-{% set total = student_certs|length + coach_certs|length + judge_certs|length %}
+{% set total = student_certs|length + coach_certs|length %}
 {% if total == 0 %}
 <div class="text-center py-5 text-muted no-print">
   <i class="bi bi-inbox" style="font-size:3rem"></i>
@@ -173,21 +172,6 @@
   'award':    c.best_award or '',
   'date':     thai_date,
   'body':     'ที่ได้ฝึกซ้อมนักเรียนเข้าร่วมการแข่งขัน'
-}) }}
-{% endfor %}
-{% endif %}
-
-{# ════ JUDGE CERTS ════ #}
-{% if cert_type in ['all', 'judge'] %}
-{% set ju_tmpl = active_templates.get('judge') %}
-{% for c in judge_certs %}
-{{ render_cert(ju_tmpl, {
-  'name':     c.judge_name,
-  'position': c.position,
-  'event':    'การแข่งขัน' ~ c.event_name ~ ' ระดับ ' ~ c.event_level,
-  'date':     thai_date,
-  'body':     'ที่ได้ปฏิบัติหน้าที่เป็นคณะกรรมการตัดสิน',
-  'award':    ''
 }) }}
 {% endfor %}
 {% endif %}

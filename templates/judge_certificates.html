@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}พิมพ์เกียรติบัตรกรรมการ{% endblock %}
+
+{% block content %}
+<!-- Print Controls -->
+<div class="print-controls no-print">
+  <div class="d-flex align-items-center gap-3 flex-wrap w-100">
+    <strong><i class="bi bi-person-badge me-1"></i>พิมพ์เกียรติบัตรกรรมการ</strong>
+
+    <form method="GET" class="d-flex gap-2 flex-wrap">
+      <select name="event_id" class="form-select form-select-sm" style="width:240px">
+        <option value="">ทุกกิจกรรม</option>
+        {% for e in events %}
+        <option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{{ e.name }} ({{ e.level }})</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline-primary btn-sm"><i class="bi bi-filter me-1"></i>กรอง</button>
+    </form>
+
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <span class="text-muted small">{{ judge_certs|length }} ใบ</span>
+      {% if active_templates.get('judge') %}
+      <span class="badge bg-success" style="font-size:.8rem"><i class="bi bi-image me-1"></i>ใช้ Template</span>
+      {% else %}
+      <span class="badge bg-light text-muted border" style="font-size:.8rem"><i class="bi bi-code-square me-1"></i>CSS fallback</span>
+      {% endif %}
+      <a href="{{ url_for('certificates') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-award me-1"></i>เกียรติบัตรนักเรียน/ครู
+      </a>
+      <button onclick="window.print()" class="btn btn-danger">
+        <i class="bi bi-printer me-1"></i>พิมพ์
+      </button>
+    </div>
+  </div>
+</div>
+
+{% if judge_certs|length == 0 %}
+<div class="text-center py-5 text-muted no-print">
+  <i class="bi bi-inbox" style="font-size:3rem"></i>
+  <h5 class="mt-3">ไม่มีเกียรติบัตรกรรมการ</h5>
+  <p>ตรวจสอบว่าได้เพิ่มกรรมการในกิจกรรมแล้ว หรือเปลี่ยนตัวกรองด้านบน</p>
+</div>
+{% endif %}
+
+{% set ju_tmpl = active_templates.get('judge') %}
+{% for c in judge_certs %}
+
+{% if ju_tmpl %}
+{# ── Template-based certificate ── #}
+<div class="cert-tmpl no-print-border" style="position:relative; display:inline-block; width:100%; page-break-after:always;">
+  <img src="{{ url_for('serve_template_image', tid=ju_tmpl.id) }}" style="width:100%; display:block;">
+  {% for f in ju_tmpl.config %}
+  {% set field_val = {
+    'name':     c.judge_name,
+    'position': c.position,
+    'event':    'การแข่งขัน' ~ c.event_name ~ ' ระดับ ' ~ c.event_level,
+    'date':     thai_date
+  }.get(f.key) %}
+  {% if field_val %}
+  <div style="position:absolute;
+              left:{{ f.x }}%;
+              top:{{ f.y }}%;
+              transform:translate(-50%,-50%);
+              font-size:{{ f.size }}px;
+              font-weight:{{ 'bold' if f.bold else 'normal' }};
+              color:{{ f.color }};
+              font-family:'Sarabun','TH Sarabun New',sans-serif;
+              white-space:nowrap;
+              text-align:center;
+              pointer-events:none;">
+    {{ field_val }}
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+
+{% else %}
+{# ── CSS fallback certificate ── #}
+<div class="cert-page">
+  <div class="cert-corner cert-corner-tl"></div>
+  <div class="cert-corner cert-corner-tr"></div>
+  <div class="cert-corner cert-corner-bl"></div>
+  <div class="cert-corner cert-corner-br"></div>
+  <div class="cert-header">
+    <div class="cert-org">{{ settings.network_name }}</div>
+    <div class="cert-title">เกียรติบัตร</div>
+    <div class="cert-subtitle">ขอมอบเกียรติบัตรฉบับนี้ให้แก่</div>
+  </div>
+  <div class="cert-body">
+    <div class="cert-name">{{ c.judge_name }}</div>
+    <div class="cert-school">{{ c.position }}</div>
+    <div class="cert-text">ที่ได้ปฏิบัติหน้าที่เป็นคณะกรรมการตัดสิน</div>
+    <div class="cert-event">การแข่งขัน{{ c.event_name }} ระดับ {{ c.event_level }}</div>
+    <div class="cert-award-wrap">
+      <span class="cert-award judge-cert">กรรมการตัดสิน</span>
+    </div>
+    <div class="cert-text">{{ settings.competition_name }}</div>
+  </div>
+  <div class="cert-date">วันที่ {{ thai_date }}</div>
+  <div class="cert-footer">
+    {% if settings.signer1_name %}
+    <div class="cert-sign">
+      <div class="cert-sign-line"></div>
+      <div class="cert-sign-name">{{ settings.signer1_name }}</div>
+      <div class="cert-sign-pos">{{ settings.signer1_position }}</div>
+    </div>
+    {% endif %}
+    {% if settings.signer2_name %}
+    <div class="cert-sign">
+      <div class="cert-sign-line"></div>
+      <div class="cert-sign-name">{{ settings.signer2_name }}</div>
+      <div class="cert-sign-pos">{{ settings.signer2_position }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endfor %}
+{% endblock %}

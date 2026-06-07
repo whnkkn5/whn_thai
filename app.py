@@ -790,22 +790,6 @@ def certificates():
     cq += ' ORDER BY e.level,e.name,t.name'
     coach_certs = db.execute(cq, cp).fetchall()
 
-    # Judge certificates (admin view only)
-    judge_certs = []
-    if not is_school:
-        jq = '''
-            SELECT ej.id, j.name as judge_name, j.position,
-                   e.name as event_name, e.level as event_level, e.id as event_id
-            FROM event_judges ej
-            JOIN judges j ON j.id=ej.judge_id
-            JOIN events e ON e.id=ej.event_id
-            WHERE 1=1
-        '''
-        jp = []
-        if event_id: jq += ' AND e.id=?'; jp.append(event_id)
-        jq += ' ORDER BY e.level,e.name,j.name'
-        judge_certs = db.execute(jq, jp).fetchall()
-
     active_templates = get_active_templates()
     db.close()
     return render_template('certificates.html',
@@ -813,12 +797,40 @@ def certificates():
         schools=schools_list, events=events_list,
         student_certs=student_certs,
         coach_certs=coach_certs,
-        judge_certs=judge_certs,
         selected_school=school_id,
         selected_event=event_id,
         cert_type=cert_type,
         active_templates=active_templates,
         is_school=is_school,
+        thai_date=format_thai_date(settings.get('competition_date','')))
+
+@app.route('/certificates/judges')
+@admin_required
+def judge_certificates():
+    db = get_db()
+    settings    = get_settings()
+    event_id    = request.args.get('event_id', type=int)
+    events_list = db.execute('SELECT * FROM events ORDER BY level,name').fetchall()
+    jq = '''
+        SELECT ej.id, j.name as judge_name, j.position,
+               e.name as event_name, e.level as event_level, e.id as event_id
+        FROM event_judges ej
+        JOIN judges j ON j.id=ej.judge_id
+        JOIN events e ON e.id=ej.event_id
+        WHERE 1=1
+    '''
+    jp = []
+    if event_id: jq += ' AND e.id=?'; jp.append(event_id)
+    jq += ' ORDER BY e.level,e.name,j.name'
+    judge_certs      = db.execute(jq, jp).fetchall()
+    active_templates = get_active_templates()
+    db.close()
+    return render_template('judge_certificates.html',
+        settings=settings,
+        events=events_list,
+        judge_certs=judge_certs,
+        selected_event=event_id,
+        active_templates=active_templates,
         thai_date=format_thai_date(settings.get('competition_date','')))
 
 # ── API ───────────────────────────────────────────────────

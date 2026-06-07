@@ -37,7 +37,9 @@
 
     <div class="nav-section">ผลการแข่งขัน</div>
     <a href="{{ url_for('certificates') }}" class="{{ 'active' if request.endpoint=='certificates' }}">
-      <i class="bi bi-award"></i> พิมพ์เกียรติบัตร</a>
+      <i class="bi bi-award"></i> เกียรติบัตรนักเรียน/ครู</a>
+    <a href="{{ url_for('judge_certificates') }}" class="{{ 'active' if request.endpoint=='judge_certificates' }}">
+      <i class="bi bi-person-badge"></i> เกียรติบัตรกรรมการ</a>
 
     <div class="nav-section">จัดการระบบ</div>
     <a href="{{ url_for('admin_users') }}" class="{{ 'active' if request.endpoint=='admin_users' }}">
