@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'competition-2024'
+app.secret_key = os.environ.get('SECRET_KEY', 'competition-2024')
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'competition.db')
 
@@ -585,7 +585,8 @@ def api_teachers(sid):
     db.close()
     return jsonify([dict(r) for r in rows])
 
+init_db()
+
 if __name__ == '__main__':
-    init_db()
     print('✅  เปิดเบราว์เซอร์ที่  http://localhost:5000')
     app.run(debug=True, port=5000)
