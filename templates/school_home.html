@@ -123,11 +123,17 @@
             <div class="row g-3">
 
               {# — Students column — #}
+              {% set st_full = (e_parts|length >= event.max_students) %}
               <div class="col-md-6">
                 <div class="card border-0 bg-light h-100">
-                  <div class="card-header bg-info bg-opacity-10 border-0 py-2">
-                    <i class="bi bi-person me-1"></i><strong>นักเรียน</strong>
-                    <span class="badge bg-info ms-1">{{ e_parts|length }}</span>
+                  <div class="card-header bg-info bg-opacity-10 border-0 py-2 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-person me-1"></i><strong>นักเรียน</strong></span>
+                    <span>
+                      <span class="badge {{ 'bg-danger' if st_full else 'bg-info text-dark' }}">
+                        {{ e_parts|length }}/{{ event.max_students }} คน
+                      </span>
+                      {% if st_full %}<span class="badge bg-danger ms-1">เต็มแล้ว</span>{% endif %}
+                    </span>
                   </div>
                   <div class="card-body py-2">
                     {% if e_parts %}
@@ -153,11 +159,14 @@
                       {% endfor %}
                     </ul>
                     {% endif %}
+                    {% if st_full %}
+                    <p class="text-danger small mb-0"><i class="bi bi-lock me-1"></i>ครบจำนวนแล้ว ({{ event.max_students }} คน)</p>
+                    {% elif not students %}
+                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>เพิ่มนักเรียนในแท็บ "นักเรียน" ก่อน</p>
+                    {% else %}
                     {% set ns_st = namespace(has_avail=false) %}
                     {% for st in students %}{% if st.id not in reg_st_ids %}{% set ns_st.has_avail = true %}{% endif %}{% endfor %}
-                    {% if not students %}
-                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>เพิ่มนักเรียนในแท็บ "นักเรียน" ก่อน</p>
-                    {% elif ns_st.has_avail %}
+                    {% if ns_st.has_avail %}
                     <form method="POST" action="{{ url_for('add_participant', eid=event.id) }}" class="d-flex gap-1">
                       <select name="student_id" class="form-select form-select-sm" required>
                         <option value="">— เลือกนักเรียน —</option>
@@ -174,16 +183,23 @@
                     {% else %}
                     <p class="text-muted small mb-0">ลงทะเบียนนักเรียนครบทุกคนแล้ว</p>
                     {% endif %}
+                    {% endif %}
                   </div>
                 </div>
               </div>
 
               {# — Coaches column — #}
+              {% set tc_full = (e_coaches|length >= event.max_coaches) %}
               <div class="col-md-6">
                 <div class="card border-0 bg-light h-100">
-                  <div class="card-header bg-warning bg-opacity-10 border-0 py-2">
-                    <i class="bi bi-person-badge me-1"></i><strong>ครูผู้ฝึกสอน</strong>
-                    <span class="badge bg-warning text-dark ms-1">{{ e_coaches|length }}</span>
+                  <div class="card-header bg-warning bg-opacity-10 border-0 py-2 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-person-badge me-1"></i><strong>ครูผู้ฝึกสอน</strong></span>
+                    <span>
+                      <span class="badge {{ 'bg-danger' if tc_full else 'bg-warning text-dark' }}">
+                        {{ e_coaches|length }}/{{ event.max_coaches }} คน
+                      </span>
+                      {% if tc_full %}<span class="badge bg-danger ms-1">เต็มแล้ว</span>{% endif %}
+                    </span>
                   </div>
                   <div class="card-body py-2">
                     {% if e_coaches %}
@@ -204,11 +220,14 @@
                       {% endfor %}
                     </ul>
                     {% endif %}
+                    {% if tc_full %}
+                    <p class="text-danger small mb-0"><i class="bi bi-lock me-1"></i>ครบจำนวนแล้ว ({{ event.max_coaches }} คน)</p>
+                    {% elif not teachers %}
+                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>เพิ่มครูในแท็บ "ครู" ก่อน</p>
+                    {% else %}
                     {% set ns_tc = namespace(has_avail=false) %}
                     {% for t in teachers %}{% if t.id not in reg_tc_ids %}{% set ns_tc.has_avail = true %}{% endif %}{% endfor %}
-                    {% if not teachers %}
-                    <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>เพิ่มครูในแท็บ "ครู" ก่อน</p>
-                    {% elif ns_tc.has_avail %}
+                    {% if ns_tc.has_avail %}
                     <form method="POST" action="{{ url_for('add_coach', eid=event.id) }}" class="d-flex gap-1">
                       <select name="teacher_id" class="form-select form-select-sm" required>
                         <option value="">— เลือกครู —</option>
@@ -224,6 +243,7 @@
                     </form>
                     {% else %}
                     <p class="text-muted small mb-0">ลงทะเบียนครูครบทุกคนแล้ว</p>
+                    {% endif %}
                     {% endif %}
                   </div>
                 </div>

@@ -30,11 +30,13 @@
   <li class="nav-item">
     <a class="nav-link active" data-bs-toggle="tab" href="#tab-students">
       <i class="bi bi-person me-1"></i>นักเรียน ({{ participants|length }})
+      <span class="badge bg-info text-dark ms-1">สูงสุด {{ event.max_students }}/รร.</span>
     </a>
   </li>
   <li class="nav-item">
     <a class="nav-link" data-bs-toggle="tab" href="#tab-coaches">
       <i class="bi bi-person-badge me-1"></i>ครูผู้ฝึกสอน ({{ coaches|length }})
+      <span class="badge bg-warning text-dark ms-1">สูงสุด {{ event.max_coaches }}/รร.</span>
     </a>
   </li>
   <li class="nav-item">

@@ -147,12 +147,17 @@ def init_db():
         )
     db.commit()
 
-    # Migration: add code column to events if not present
-    try:
-        db.execute("ALTER TABLE events ADD COLUMN code TEXT NOT NULL DEFAULT ''")
-        db.commit()
-    except Exception:
-        db.rollback()
+    # Migrations
+    for alter in [
+        "ALTER TABLE events ADD COLUMN code TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE events ADD COLUMN max_students INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE events ADD COLUMN max_coaches INTEGER NOT NULL DEFAULT 1",
+    ]:
+        try:
+            db.execute(alter)
+            db.commit()
+        except Exception:
+            db.rollback()
 
     admin = db.execute("SELECT 1 FROM users WHERE role='admin'").fetchone()
     if not admin:
@@ -437,11 +442,16 @@ def settings_page():
 def events():
     db = get_db()
     if request.method == 'POST':
-        code  = request.form.get('code', '').strip()
-        name  = request.form['name'].strip()
-        level = request.form['level'].strip()
+        code         = request.form.get('code', '').strip()
+        name         = request.form['name'].strip()
+        level        = request.form['level'].strip()
+        max_students = int(request.form.get('max_students') or 1)
+        max_coaches  = int(request.form.get('max_coaches') or 1)
         if name and level:
-            db.execute('INSERT INTO events (code,name,level) VALUES (%s,%s,%s)', [code, name, level])
+            db.execute(
+                'INSERT INTO events (code,name,level,max_students,max_coaches) VALUES (%s,%s,%s,%s,%s)',
+                [code, name, level, max_students, max_coaches]
+            )
             db.commit()
             flash(f'เพิ่มกิจกรรม "{name}" แล้ว', 'success')
         return redirect(url_for('events'))
@@ -507,12 +517,25 @@ def add_participant(eid):
     back       = url_for('school_home') if is_school else url_for('event_detail', eid=eid)
     if student_id:
         db = get_db()
-        if is_school:
-            st = db.execute('SELECT school_id FROM students WHERE id=%s', [student_id]).fetchone()
-            if not st or st['school_id'] != session.get('school_id'):
-                flash('ไม่มีสิทธิ์ลงทะเบียนนักเรียนของโรงเรียนอื่น', 'danger')
-                db.close()
-                return redirect(back)
+        st = db.execute('SELECT school_id FROM students WHERE id=%s', [student_id]).fetchone()
+        if not st:
+            db.close()
+            return redirect(back)
+        if is_school and st['school_id'] != session.get('school_id'):
+            flash('ไม่มีสิทธิ์ลงทะเบียนนักเรียนของโรงเรียนอื่น', 'danger')
+            db.close()
+            return redirect(back)
+        # Enforce per-school student limit
+        ev = db.execute('SELECT max_students FROM events WHERE id=%s', [eid]).fetchone()
+        cur_count = db.execute('''
+            SELECT COUNT(*) FROM participants p
+            JOIN students s ON s.id=p.student_id
+            WHERE p.event_id=%s AND s.school_id=%s
+        ''', [eid, st['school_id']]).fetchone()[0]
+        if cur_count >= (ev['max_students'] if ev else 1):
+            flash(f'กิจกรรมนี้รับนักเรียนได้สูงสุด {ev["max_students"]} คนต่อโรงเรียน', 'warning')
+            db.close()
+            return redirect(back)
         try:
             db.execute('INSERT INTO participants (event_id,student_id) VALUES (%s,%s)', [eid, student_id])
             db.commit()
@@ -548,12 +571,25 @@ def add_coach(eid):
     back       = url_for('school_home') if is_school else url_for('event_detail', eid=eid)
     if teacher_id:
         db = get_db()
-        if is_school:
-            t = db.execute('SELECT school_id FROM teachers WHERE id=%s', [teacher_id]).fetchone()
-            if not t or t['school_id'] != session.get('school_id'):
-                flash('ไม่มีสิทธิ์', 'danger')
-                db.close()
-                return redirect(back)
+        t = db.execute('SELECT school_id FROM teachers WHERE id=%s', [teacher_id]).fetchone()
+        if not t:
+            db.close()
+            return redirect(back)
+        if is_school and t['school_id'] != session.get('school_id'):
+            flash('ไม่มีสิทธิ์', 'danger')
+            db.close()
+            return redirect(back)
+        # Enforce per-school coach limit
+        ev = db.execute('SELECT max_coaches FROM events WHERE id=%s', [eid]).fetchone()
+        cur_count = db.execute('''
+            SELECT COUNT(*) FROM coaches c
+            JOIN teachers tc ON tc.id=c.teacher_id
+            WHERE c.event_id=%s AND tc.school_id=%s
+        ''', [eid, t['school_id']]).fetchone()[0]
+        if cur_count >= (ev['max_coaches'] if ev else 1):
+            flash(f'กิจกรรมนี้รับครูผู้ฝึกสอนได้สูงสุด {ev["max_coaches"]} คนต่อโรงเรียน', 'warning')
+            db.close()
+            return redirect(back)
         try:
             db.execute('INSERT INTO coaches (event_id,teacher_id) VALUES (%s,%s)', [eid, teacher_id])
             db.commit()
