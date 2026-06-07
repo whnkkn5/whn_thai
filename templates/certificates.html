@@ -84,7 +84,7 @@
       </select>
       <select name="event_id" class="form-select form-select-sm" style="width:220px">
         <option value="">ทุกกิจกรรม</option>
-        {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }} ({{ e.level }})</option>{% endfor %}
+        {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }}</option>{% endfor %}
       </select>
       <select name="type" class="form-select form-select-sm" style="width:180px">
         <option value="all"     {{ 'selected' if cert_type=='all' }}>ทุกประเภท</option>
@@ -97,7 +97,7 @@
     <form method="GET" class="d-flex gap-2 flex-wrap">
       <select name="event_id" class="form-select form-select-sm" style="width:220px">
         <option value="">ทุกกิจกรรม</option>
-        {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }} ({{ e.level }})</option>{% endfor %}
+        {% for e in events %}<option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }}</option>{% endfor %}
       </select>
       <select name="type" class="form-select form-select-sm" style="width:180px">
         <option value="all"    {{ 'selected' if cert_type=='all' }}>ทุกประเภท</option>
@@ -153,7 +153,7 @@
   'name':   c.student_name,
   'school': ('ชั้น ' ~ c.class_level ~ ' ' if c.class_level else '') ~ 'โรงเรียน' ~ c.school_name,
   'award':  c.award,
-  'event':  'การแข่งขัน' ~ c.event_name ~ ' ระดับ ' ~ c.event_level,
+  'event':  'การแข่งขัน' ~ c.event_name,
   'date':   thai_date,
   'body':   'ได้รับรางวัล'
 }) }}
@@ -168,7 +168,7 @@
   'name':     c.teacher_name,
   'position': c.position ~ ' โรงเรียน' ~ c.school_name,
   'school':   'โรงเรียน' ~ c.school_name,
-  'event':    'การแข่งขัน' ~ c.event_name ~ ' ระดับ ' ~ c.event_level,
+  'event':    'การแข่งขัน' ~ c.event_name,
   'award':    c.best_award or '',
   'date':     thai_date,
   'body':     'ที่ได้ฝึกซ้อมนักเรียนเข้าร่วมการแข่งขัน'

@@ -12,7 +12,7 @@
 <div class="d-flex justify-content-between align-items-start mb-3">
   <div>
     <h1 class="page-title mb-1">ผลการแข่งขัน</h1>
-    <h5 class="text-muted">{{ event.name }} <span class="badge bg-secondary">{{ event.level }}</span></h5>
+    <h5 class="text-muted">{{ event.name }}</h5>
   </div>
   <div class="d-flex gap-2">
     <a href="{{ url_for('event_scores', eid=event.id) }}" class="btn btn-outline-primary">

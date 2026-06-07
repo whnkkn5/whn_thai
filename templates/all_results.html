@@ -14,19 +14,8 @@
 </div>
 {% else %}
 
-{# group events by level #}
-{% set levels = events | map(attribute='level') | unique | list %}
-{% for level in levels %}
-{% set level_events = events | selectattr('level', 'equalto', level) | list %}
-
-<div class="mb-1">
-  <h5 class="text-muted fw-semibold" style="font-size:.85rem; text-transform:uppercase; letter-spacing:.06em;">
-    <i class="bi bi-layers me-1"></i>ระดับ{{ level }}
-  </h5>
-</div>
-
 <div class="row g-3 mb-4">
-{% for event in level_events %}
+{% for event in events %}
 {% set e_parts = results_by_event.get(event.id, []) %}
 <div class="col-12">
   <div class="card">
@@ -36,7 +25,6 @@
       <span class="fw-semibold">
         <i class="bi bi-trophy me-2 text-warning"></i>
         {% if event.code %}<span class="text-primary me-1">[{{ event.code }}]</span>{% endif %}{{ event.name }}
-        <span class="badge bg-secondary ms-1">{{ event.level }}</span>
       </span>
       <div class="d-flex align-items-center gap-2">
         {% if e_parts %}
@@ -101,7 +89,6 @@
 </div>
 {% endfor %}
 </div>
-{% endfor %}
 
 {% endif %}
 {% endblock %}

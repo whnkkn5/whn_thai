@@ -62,7 +62,6 @@
       <thead>
         <tr>
           <th>กิจกรรม</th>
-          <th>ระดับ</th>
           <th class="text-center">ผู้เข้าแข่งขัน</th>
           <th class="text-center">สถานะ</th>
           <th></th>
@@ -72,7 +71,6 @@
         {% for e in events %}
         <tr>
           <td><a href="{{ url_for('event_detail', eid=e.id) }}" class="fw-semibold text-decoration-none">{{ e.name }}</a></td>
-          <td><span class="badge bg-secondary">{{ e.level }}</span></td>
           <td class="text-center">{{ e.cnt_total }}</td>
           <td class="text-center">
             {% if e.cnt_total == 0 %}

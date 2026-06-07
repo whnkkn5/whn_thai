@@ -11,7 +11,7 @@
       <select name="event_id" class="form-select form-select-sm" style="width:240px">
         <option value="">ทุกกิจกรรม</option>
         {% for e in events %}
-        <option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }} ({{ e.level }})</option>
+        <option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }}</option>
         {% endfor %}
       </select>
       <button class="btn btn-outline-primary btn-sm"><i class="bi bi-filter me-1"></i>กรอง</button>
@@ -53,7 +53,7 @@
   {% set field_val = {
     'name':     c.judge_name,
     'position': c.position,
-    'event':    'การแข่งขัน' ~ c.event_name ~ ' ระดับ ' ~ c.event_level,
+    'event':    'การแข่งขัน' ~ c.event_name,
     'date':     thai_date
   }.get(f.key) %}
   {% if field_val %}
@@ -90,7 +90,7 @@
     <div class="cert-name">{{ c.judge_name }}</div>
     <div class="cert-school">{{ c.position }}</div>
     <div class="cert-text">ที่ได้ปฏิบัติหน้าที่เป็นคณะกรรมการตัดสิน</div>
-    <div class="cert-event">การแข่งขัน{{ c.event_name }} ระดับ {{ c.event_level }}</div>
+    <div class="cert-event">การแข่งขัน{{ c.event_name }}</div>
     <div class="cert-award-wrap">
       <span class="cert-award judge-cert">กรรมการตัดสิน</span>
     </div>

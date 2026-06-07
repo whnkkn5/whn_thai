@@ -152,6 +152,8 @@ def init_db():
         "ALTER TABLE events ADD COLUMN code TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE events ADD COLUMN max_students INTEGER NOT NULL DEFAULT 1",
         "ALTER TABLE events ADD COLUMN max_coaches INTEGER NOT NULL DEFAULT 1",
+        "ALTER TABLE events ALTER COLUMN level SET DEFAULT ''",
+        "ALTER TABLE events ALTER COLUMN level DROP NOT NULL",
     ]:
         try:
             db.execute(alter)
@@ -444,13 +446,12 @@ def events():
     if request.method == 'POST':
         code         = request.form.get('code', '').strip()
         name         = request.form['name'].strip()
-        level        = request.form['level'].strip()
         max_students = int(request.form.get('max_students') or 1)
         max_coaches  = int(request.form.get('max_coaches') or 1)
-        if name and level:
+        if name:
             db.execute(
                 'INSERT INTO events (code,name,level,max_students,max_coaches) VALUES (%s,%s,%s,%s,%s)',
-                [code, name, level, max_students, max_coaches]
+                [code, name, '', max_students, max_coaches]
             )
             db.commit()
             flash(f'เพิ่มกิจกรรม "{name}" แล้ว', 'success')
