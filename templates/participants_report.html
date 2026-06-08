@@ -219,9 +219,9 @@
   color: transparent;
 }
 .col-no      { width: 6%;  text-align: center; white-space: nowrap; }
-.col-student { white-space: nowrap; }          /* ไม่ตัดชื่อนักเรียน */
+.col-student { white-space: nowrap; }
 .col-school  { width: 35%; word-break: keep-all; }
-.col-coach   { width: 28%; word-break: keep-all; }
+.col-coach   { white-space: nowrap; }
 
 /* ── Print styles ── */
 @media print {
@@ -282,8 +282,9 @@
     font-size: 16pt !important;
   }
 
-  .col-student { white-space: nowrap !important; }
   .col-no      { white-space: nowrap !important; }
+  .col-student { white-space: nowrap !important; }
+  .col-coach   { white-space: nowrap !important; }
 }
 </style>
 {% endblock %}
