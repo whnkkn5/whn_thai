@@ -944,6 +944,54 @@ def delete_judge(jid):
     db.close()
     return redirect(url_for('judges'))
 
+# ── Participants Report ───────────────────────────────────
+
+@app.route('/admin/participants-report')
+@admin_required
+def participants_report():
+    db       = get_db()
+    events   = db.execute('SELECT * FROM events ORDER BY code, name').fetchall()
+    schools  = db.execute('SELECT * FROM schools ORDER BY name').fetchall()
+
+    sel_event  = request.args.get('event_id',  type=int)
+    sel_school = request.args.get('school_id', type=int)
+
+    where, params = [], []
+    if sel_event:
+        where.append('e.id = %s');  params.append(sel_event)
+    if sel_school:
+        where.append('s.id = %s');  params.append(sel_school)
+    w = ('WHERE ' + ' AND '.join(where)) if where else ''
+
+    rows = db.execute(f'''
+        SELECT p.id, st.name as student_name,
+               s.id as school_id, s.name as school_name,
+               e.id as event_id, e.code as event_code, e.name as event_name
+        FROM participants p
+        JOIN students st ON st.id = p.student_id
+        JOIN schools  s  ON s.id  = st.school_id
+        JOIN events   e  ON e.id  = p.event_id
+        {w}
+        ORDER BY e.code, e.name, s.name, st.name
+    ''', params).fetchall()
+
+    # coaches indexed by (event_id, school_id)
+    coaches_raw = db.execute('''
+        SELECT c.event_id, t.school_id,
+               t.name as teacher_name, t.position
+        FROM coaches c JOIN teachers t ON t.id = c.teacher_id
+        ORDER BY t.name
+    ''').fetchall()
+    coaches_map = {}
+    for c in coaches_raw:
+        coaches_map.setdefault((c['event_id'], c['school_id']), []).append(c)
+
+    db.close()
+    return render_template('participants_report.html',
+                           rows=rows, coaches_map=coaches_map,
+                           events=events, schools=schools,
+                           sel_event=sel_event, sel_school=sel_school)
+
 # ── Certificates ──────────────────────────────────────────
 
 @app.route('/certificates')

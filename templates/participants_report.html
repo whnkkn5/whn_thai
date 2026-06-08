@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}รายชื่อผู้เข้าแข่งขัน{% endblock %}
+
+{% block content %}
+<!-- Print Controls -->
+<div class="print-controls no-print">
+  <div class="d-flex align-items-center gap-3 flex-wrap w-100">
+    <strong><i class="bi bi-list-ol me-1"></i>รายชื่อผู้เข้าแข่งขัน</strong>
+
+    <form method="GET" class="d-flex gap-2 flex-wrap">
+      <select name="event_id" class="form-select form-select-sm" style="width:240px">
+        <option value="">ทุกกิจกรรม</option>
+        {% for e in events %}
+        <option value="{{ e.id }}" {{ 'selected' if sel_event==e.id }}>
+          {% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }}
+        </option>
+        {% endfor %}
+      </select>
+      <select name="school_id" class="form-select form-select-sm" style="width:200px">
+        <option value="">ทุกโรงเรียน</option>
+        {% for s in schools %}
+        <option value="{{ s.id }}" {{ 'selected' if sel_school==s.id }}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline-primary btn-sm"><i class="bi bi-filter me-1"></i>กรอง</button>
+    </form>
+
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <span class="text-muted small">{{ rows|length }} รายการ</span>
+      <button onclick="window.print()" class="btn btn-danger btn-sm">
+        <i class="bi bi-printer me-1"></i>พิมพ์
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Print header (visible only when printing) -->
+<div class="print-only" style="display:none; text-align:center; margin-bottom:16px">
+  <h4 style="margin:0">รายชื่อผู้เข้าแข่งขัน</h4>
+  {% if sel_event %}
+    {% for e in events %}{% if e.id == sel_event %}
+    <div style="font-size:.9rem">กิจกรรม: {% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }}</div>
+    {% endif %}{% endfor %}
+  {% endif %}
+  {% if sel_school %}
+    {% for s in schools %}{% if s.id == sel_school %}
+    <div style="font-size:.9rem">โรงเรียน: {{ s.name }}</div>
+    {% endif %}{% endfor %}
+  {% endif %}
+</div>
+
+{% if rows|length == 0 %}
+<div class="text-center py-5 text-muted no-print">
+  <i class="bi bi-inbox" style="font-size:3rem"></i>
+  <h5 class="mt-3">ไม่มีรายชื่อ</h5>
+  <p>ยังไม่มีนักเรียนลงทะเบียน หรือลองเปลี่ยนตัวกรอง</p>
+</div>
+{% else %}
+
+{# Group rows by event #}
+{% set seen_events = namespace(ids=[]) %}
+{% for row in rows %}
+{% if row.event_id not in seen_events.ids %}
+{% set seen_events.ids = seen_events.ids + [row.event_id] %}
+
+{# collect rows for this event #}
+{% set ev_rows = rows | selectattr('event_id','equalto',row.event_id) | list %}
+
+<div class="card mb-3" style="page-break-inside:avoid">
+  <div class="card-header py-2" style="background:#e8f4f8">
+    <strong>
+      {% if row.event_code %}<span class="text-primary">[{{ row.event_code }}]</span> {% endif %}
+      {{ row.event_name }}
+    </strong>
+    <span class="text-muted small ms-2 no-print">({{ ev_rows|length }} คน)</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:40px" class="text-center">#</th>
+          <th>ชื่อ-สกุล นักเรียน</th>
+          <th>โรงเรียน</th>
+          <th>ครูผู้ฝึกสอน</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set counter = namespace(n=0) %}
+        {% for r in ev_rows %}
+        {% set counter.n = counter.n + 1 %}
+        {% set coaches = coaches_map.get((r.event_id, r.school_id), []) %}
+        <tr>
+          <td class="text-center text-muted">{{ counter.n }}</td>
+          <td class="fw-semibold">{{ r.student_name }}</td>
+          <td class="text-muted">{{ r.school_name }}</td>
+          <td class="text-muted small">
+            {% if coaches %}
+              {{ coaches | map(attribute='teacher_name') | join(', ') }}
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endif %}
+{% endfor %}
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<style>
+@media print {
+  .print-only { display: block !important; }
+  .card { border: 1px solid #ccc !important; }
+  .card-header { background: #eee !important; -webkit-print-color-adjust: exact; }
+  table { font-size: 11pt; }
+  th, td { padding: 4px 8px !important; }
+}
+</style>
+{% endblock %}
