@@ -986,11 +986,14 @@ def participants_report():
     for c in coaches_raw:
         coaches_map.setdefault((c['event_id'], c['school_id']), []).append(c)
 
+    settings = get_settings()
     db.close()
     return render_template('participants_report.html',
                            rows=rows, coaches_map=coaches_map,
                            events=events, schools=schools,
-                           sel_event=sel_event, sel_school=sel_school)
+                           sel_event=sel_event, sel_school=sel_school,
+                           settings=settings,
+                           thai_date=format_thai_date(settings.get('competition_date','')))
 
 # ── Certificates ──────────────────────────────────────────
 

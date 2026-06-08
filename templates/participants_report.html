@@ -2,7 +2,7 @@
 {% block title %}รายชื่อผู้เข้าแข่งขัน{% endblock %}
 
 {% block content %}
-<!-- Print Controls -->
+<!-- ── Print Controls (no-print) ── -->
 <div class="print-controls no-print">
   <div class="d-flex align-items-center gap-3 flex-wrap w-100">
     <strong><i class="bi bi-list-ol me-1"></i>รายชื่อผู้เข้าแข่งขัน</strong>
@@ -34,54 +34,54 @@
   </div>
 </div>
 
-<!-- Print header (visible only when printing) -->
-<div class="print-only" style="display:none; text-align:center; margin-bottom:16px">
-  <h4 style="margin:0">รายชื่อผู้เข้าแข่งขัน</h4>
-  {% if sel_event %}
-    {% for e in events %}{% if e.id == sel_event %}
-    <div style="font-size:.9rem">กิจกรรม: {% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }}</div>
-    {% endif %}{% endfor %}
-  {% endif %}
-  {% if sel_school %}
-    {% for s in schools %}{% if s.id == sel_school %}
-    <div style="font-size:.9rem">โรงเรียน: {{ s.name }}</div>
-    {% endif %}{% endfor %}
-  {% endif %}
-</div>
-
+<!-- ── Preview (no-print, shown on screen) ── -->
 {% if rows|length == 0 %}
 <div class="text-center py-5 text-muted no-print">
   <i class="bi bi-inbox" style="font-size:3rem"></i>
   <h5 class="mt-3">ไม่มีรายชื่อ</h5>
   <p>ยังไม่มีนักเรียนลงทะเบียน หรือลองเปลี่ยนตัวกรอง</p>
 </div>
-{% else %}
+{% endif %}
 
-{# Group rows by event #}
-{% set seen_events = namespace(ids=[]) %}
-{% for row in rows %}
-{% if row.event_id not in seen_events.ids %}
-{% set seen_events.ids = seen_events.ids + [row.event_id] %}
+<!-- ── Printable Document ── -->
+<div class="report-doc">
 
-{# collect rows for this event #}
-{% set ev_rows = rows | selectattr('event_id','equalto',row.event_id) | list %}
+  {% if rows|length > 0 %}
 
-<div class="card mb-3" style="page-break-inside:avoid">
-  <div class="card-header py-2" style="background:#e8f4f8">
-    <strong>
-      {% if row.event_code %}<span class="text-primary">[{{ row.event_code }}]</span> {% endif %}
-      {{ row.event_name }}
-    </strong>
-    <span class="text-muted small ms-2 no-print">({{ ev_rows|length }} คน)</span>
-  </div>
-  <div class="card-body p-0">
-    <table class="table table-sm table-hover mb-0">
-      <thead class="table-light">
+  {# Group rows by event #}
+  {% set seen = namespace(ids=[]) %}
+  {% for row in rows %}
+  {% if row.event_id not in seen.ids %}
+  {% set seen.ids = seen.ids + [row.event_id] %}
+  {% set ev_rows = rows | selectattr('event_id','equalto',row.event_id) | list %}
+
+  <!-- Document page per event -->
+  <div class="doc-page">
+
+    <!-- Header -->
+    <div class="doc-header">
+      <div class="doc-org">{{ settings.network_name }}</div>
+      <div class="doc-title">รายชื่อนักเรียนและครูผู้ฝึกสอน</div>
+      <div class="doc-subtitle">ที่เข้าร่วม{{ settings.competition_name }}</div>
+      {% if thai_date %}<div class="doc-date">วันที่ {{ thai_date }}</div>{% endif %}
+    </div>
+
+    <!-- Event name bar -->
+    <div class="doc-event-bar">
+      <span class="doc-event-label">กิจกรรม</span>
+      {% if row.event_code %}<span class="doc-event-code">[{{ row.event_code }}]</span>{% endif %}
+      <span class="doc-event-name">{{ row.event_name }}</span>
+      <span class="doc-event-count no-print">({{ ev_rows|length }} คน)</span>
+    </div>
+
+    <!-- Table -->
+    <table class="doc-table">
+      <thead>
         <tr>
-          <th style="width:40px" class="text-center">#</th>
-          <th>ชื่อ-สกุล นักเรียน</th>
-          <th>โรงเรียน</th>
-          <th>ครูผู้ฝึกสอน</th>
+          <th class="col-no">ที่</th>
+          <th class="col-student">ชื่อ-สกุล นักเรียน</th>
+          <th class="col-school">โรงเรียน</th>
+          <th class="col-coach">ครูผู้ฝึกสอน</th>
         </tr>
       </thead>
       <tbody>
@@ -90,35 +90,196 @@
         {% set counter.n = counter.n + 1 %}
         {% set coaches = coaches_map.get((r.event_id, r.school_id), []) %}
         <tr>
-          <td class="text-center text-muted">{{ counter.n }}</td>
-          <td class="fw-semibold">{{ r.student_name }}</td>
-          <td class="text-muted">{{ r.school_name }}</td>
-          <td class="text-muted small">
-            {% if coaches %}
-              {{ coaches | map(attribute='teacher_name') | join(', ') }}
-            {% else %}—{% endif %}
+          <td class="col-no text-center">{{ counter.n }}</td>
+          <td class="col-student">{{ r.student_name }}</td>
+          <td class="col-school">{{ r.school_name }}</td>
+          <td class="col-coach">
+            {% if coaches %}{{ coaches | map(attribute='teacher_name') | join(', ') }}{% else %}-{% endif %}
           </td>
+        </tr>
+        {% endfor %}
+        <!-- Padding rows for short lists -->
+        {% for i in range([8 - ev_rows|length, 0]|max) %}
+        <tr class="empty-row">
+          <td class="col-no text-center">{{ ev_rows|length + i + 1 }}</td>
+          <td class="col-student"></td>
+          <td class="col-school"></td>
+          <td class="col-coach"></td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-  </div>
-</div>
 
-{% endif %}
-{% endfor %}
+  </div><!-- /doc-page -->
 
-{% endif %}
+  {% endif %}
+  {% endfor %}
+
+  {% endif %}
+</div><!-- /report-doc -->
 {% endblock %}
 
 {% block scripts %}
 <style>
+/* ── Screen preview ── */
+.report-doc {
+  font-family: 'TH Sarabun New', 'TH SarabunPSK', 'Sarabun', sans-serif;
+  font-size: 15pt;
+  line-height: 1.5;
+  color: #000;
+}
+
+.doc-page {
+  background: #fff;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto;
+  padding: 2cm 2.5cm 2cm 3cm;
+  box-shadow: 0 0 12px rgba(0,0,0,.15);
+  box-sizing: border-box;
+  page-break-after: always;
+}
+
+/* Header */
+.doc-header {
+  text-align: center;
+  margin-bottom: 18pt;
+  border-bottom: 2px solid #000;
+  padding-bottom: 10pt;
+}
+.doc-org {
+  font-size: 16pt;
+  font-weight: 700;
+  margin-bottom: 2pt;
+}
+.doc-title {
+  font-size: 18pt;
+  font-weight: 700;
+}
+.doc-subtitle {
+  font-size: 16pt;
+  font-weight: 600;
+}
+.doc-date {
+  font-size: 14pt;
+  margin-top: 4pt;
+  color: #333;
+}
+
+/* Event bar */
+.doc-event-bar {
+  background: #f0f0f0;
+  border: 1.5px solid #888;
+  padding: 5pt 10pt;
+  margin-bottom: 8pt;
+  font-size: 16pt;
+  font-weight: 700;
+}
+.doc-event-label {
+  color: #555;
+  font-weight: 400;
+  margin-right: 6pt;
+}
+.doc-event-code {
+  color: #1a5276;
+  margin-right: 4pt;
+}
+.doc-event-count {
+  font-size: 12pt;
+  color: #888;
+  font-weight: 400;
+  float: right;
+}
+
+/* Table */
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16pt;
+  line-height: 1.6;
+}
+.doc-table th,
+.doc-table td {
+  border: 1.5px solid #000;
+  padding: 4pt 8pt;
+  vertical-align: middle;
+}
+.doc-table thead tr {
+  background: #d6e4f0;
+}
+.doc-table thead th {
+  font-weight: 700;
+  text-align: center;
+}
+.doc-table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+.doc-table .empty-row td {
+  color: transparent;
+}
+.col-no    { width: 6%;  text-align: center; }
+.col-student { width: 30%; }
+.col-school  { width: 36%; }
+.col-coach   { width: 28%; }
+
+/* ── Print styles ── */
 @media print {
-  .print-only { display: block !important; }
-  .card { border: 1px solid #ccc !important; }
-  .card-header { background: #eee !important; -webkit-print-color-adjust: exact; }
-  table { font-size: 11pt; }
-  th, td { padding: 4px 8px !important; }
+  @page {
+    size: A4 portrait;
+    margin: 2cm 2cm 2cm 2.5cm;
+  }
+
+  body, html {
+    font-family: 'TH Sarabun New', 'TH SarabunPSK', 'Sarabun', sans-serif !important;
+    font-size: 16pt !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  .no-print, .print-controls, .sidebar, .main-content > .alert { display: none !important; }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .report-doc { font-size: 16pt !important; }
+
+  .doc-page {
+    width: 100%;
+    min-height: auto;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+
+  .doc-header {
+    border-bottom: 2px solid #000;
+  }
+
+  .doc-event-bar {
+    background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .doc-table thead tr {
+    background: #d6e4f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .doc-table tbody tr:nth-child(even) {
+    background: #fafafa !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .doc-table th, .doc-table td {
+    border: 1.5px solid #000 !important;
+    font-size: 16pt !important;
+  }
 }
 </style>
 {% endblock %}
