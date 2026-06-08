@@ -197,6 +197,7 @@
   border-collapse: collapse;
   font-size: 16pt;
   line-height: 1.6;
+  table-layout: auto;
 }
 .doc-table th,
 .doc-table td {
@@ -217,10 +218,10 @@
 .doc-table .empty-row td {
   color: transparent;
 }
-.col-no    { width: 6%;  text-align: center; }
-.col-student { width: 30%; }
-.col-school  { width: 36%; }
-.col-coach   { width: 28%; }
+.col-no      { width: 6%;  text-align: center; white-space: nowrap; }
+.col-student { white-space: nowrap; }          /* ไม่ตัดชื่อนักเรียน */
+.col-school  { width: 35%; word-break: keep-all; }
+.col-coach   { width: 28%; word-break: keep-all; }
 
 /* ── Print styles ── */
 @media print {
@@ -280,6 +281,9 @@
     border: 1.5px solid #000 !important;
     font-size: 16pt !important;
   }
+
+  .col-student { white-space: nowrap !important; }
+  .col-no      { white-space: nowrap !important; }
 }
 </style>
 {% endblock %}
