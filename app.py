@@ -133,13 +133,14 @@ def init_db():
     db.commit()
 
     for key, val in [
-        ('competition_name', 'การแข่งขันวันภาษาไทยแห่งชาติ'),
-        ('network_name',     'ศูนย์เครือข่าย'),
-        ('competition_date', ''),
-        ('signer1_name',     ''),
-        ('signer1_position', ''),
-        ('signer2_name',     ''),
-        ('signer2_position', ''),
+        ('competition_name',       'การแข่งขันวันภาษาไทยแห่งชาติ'),
+        ('network_name',           'ศูนย์เครือข่าย'),
+        ('competition_date',       ''),
+        ('signer1_name',           ''),
+        ('signer1_position',       ''),
+        ('signer2_name',           ''),
+        ('signer2_position',       ''),
+        ('allow_school_print',     '1'),
     ]:
         db.execute(
             'INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO NOTHING',
@@ -341,6 +342,8 @@ def school_home():
 
     events_joined       = len(parts_by_event)
     total_registrations = sum(len(v) for v in parts_by_event.values())
+    settings    = get_settings()
+    allow_print = settings.get('allow_school_print', '1') != '0'
     db.close()
     return render_template('school_home.html', school=school,
                            students=students, teachers=teachers,
@@ -348,7 +351,8 @@ def school_home():
                            parts_by_event=parts_by_event,
                            coaches_by_event=coaches_by_event,
                            events_joined=events_joined,
-                           total_registrations=total_registrations)
+                           total_registrations=total_registrations,
+                           allow_print=allow_print)
 
 # ── Admin: User Management ────────────────────────────────
 
@@ -431,6 +435,12 @@ def settings_page():
                 'INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
                 [key, request.form.get(key, '')]
             )
+        # checkbox — ไม่ถูกส่งมาเมื่อ unchecked
+        allow_print = '1' if request.form.get('allow_school_print') else '0'
+        db.execute(
+            'INSERT INTO settings (key, value) VALUES (%s, %s) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+            ['allow_school_print', allow_print]
+        )
         db.commit()
         db.close()
         flash('บันทึกการตั้งค่าเรียบร้อยแล้ว', 'success')
@@ -1003,6 +1013,10 @@ def certificates():
     db = get_db()
     settings  = get_settings()
     is_school = session.get('role') == 'school'
+    if is_school and settings.get('allow_school_print', '1') == '0':
+        db.close()
+        flash('ขณะนี้ยังไม่เปิดให้พิมพ์เกียรติบัตร — กรุณาติดต่อ Admin', 'warning')
+        return redirect(url_for('school_home'))
     school_id = session.get('school_id') if is_school else request.args.get('school_id', type=int)
     event_id  = request.args.get('event_id', type=int)
     cert_type = request.args.get('type', 'all')

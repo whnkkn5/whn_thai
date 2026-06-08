@@ -44,6 +44,18 @@
           <input name="signer2_position" class="form-control" value="{{ s.signer2_position }}">
         </div>
       </div>
+      <hr>
+      <p class="fw-semibold mb-3">การพิมพ์เกียรติบัตร</p>
+      <div class="form-check form-switch mb-4">
+        <input class="form-check-input" type="checkbox" role="switch"
+               name="allow_school_print" id="allowPrint" value="1"
+               {{ 'checked' if s.allow_school_print != '0' }}>
+        <label class="form-check-label" for="allowPrint">
+          อนุญาตให้โรงเรียนพิมพ์เกียรติบัตรได้
+        </label>
+        <div class="form-text text-muted">เมื่อปิด โรงเรียนจะไม่สามารถเข้าหน้าพิมพ์เกียรติบัตรได้</div>
+      </div>
+
       <button class="btn btn-primary px-4"><i class="bi bi-save me-1"></i>บันทึก</button>
     </form>
   </div>
