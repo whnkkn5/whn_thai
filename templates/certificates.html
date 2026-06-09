@@ -4,7 +4,7 @@
 {% macro render_cert(tmpl_info, fields_data) %}
 {% if tmpl_info %}
 {# ── Template-based certificate ── #}
-<div class="cert-tmpl no-print-border" style="position:relative; display:inline-block; width:100%; page-break-after:always;">
+<div class="cert-tmpl no-print-border" style="position:relative; width:100%;">
   <img src="{{ url_for('serve_template_image', tid=tmpl_info.id) }}" style="width:100%; display:block;">
   {% for f in tmpl_info.config %}
   {% if fields_data.get(f.key) %}

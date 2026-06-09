@@ -180,9 +180,9 @@ body { font-family: 'Sarabun', 'TH Sarabun New', Sarabun, sans-serif;
 }
 
 .cert-tmpl {
+  display: block;
   margin: 0 auto 24px;
   box-shadow: 0 4px 20px rgba(0,0,0,.15);
-  page-break-after: always;
   max-width: 100%;
 }
 
@@ -194,13 +194,26 @@ body { font-family: 'Sarabun', 'TH Sarabun New', Sarabun, sans-serif;
 
   .cert-page {
     width: 210mm; min-height: 148mm;
-    box-shadow: none; page-break-after: always;
+    box-shadow: none;
     margin: 0; padding: 12mm 16mm;
+    break-after: page;
+    page-break-after: always;
+  }
+  .cert-page:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
   }
   .cert-tmpl {
+    display: block;
     box-shadow: none;
     margin: 0;
     width: 100%;
+    break-after: page;
+    page-break-after: always;
+  }
+  .cert-tmpl:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
   }
   .cert-tmpl img { width: 100% !important; }
   @page { size: A5 landscape; margin: 0; }
