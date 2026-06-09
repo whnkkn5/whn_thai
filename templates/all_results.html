@@ -1,93 +1,302 @@
 {% extends "base.html" %}
 {% block title %}ผลการแข่งขันทุกกิจกรรม{% endblock %}
+
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="page-title mb-0"><i class="bi bi-bar-chart-line me-2"></i>ผลการแข่งขันทุกกิจกรรม</h1>
-  <span class="text-muted small">{{ events|length }} กิจกรรม</span>
-</div>
-
-{% if not events %}
-<div class="text-center py-5 text-muted">
-  <i class="bi bi-calendar-x" style="font-size:3rem"></i>
-  <h5 class="mt-3">ยังไม่มีกิจกรรมการแข่งขัน</h5>
-</div>
-{% else %}
-
-<div class="row g-3 mb-4">
-{% for event in events %}
-{% set e_parts = results_by_event.get(event.id, []) %}
-<div class="col-12">
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center"
-         style="background:#f8f9fa; cursor:pointer;"
-         data-bs-toggle="collapse" data-bs-target="#ev{{ event.id }}">
-      <span class="fw-semibold">
-        <i class="bi bi-trophy me-2 text-warning"></i>
-        {% if event.code %}<span class="text-primary me-1">[{{ event.code }}]</span>{% endif %}{{ event.name }}
-      </span>
-      <div class="d-flex align-items-center gap-2">
-        {% if e_parts %}
-        <span class="badge bg-success">{{ e_parts|length }} รางวัล</span>
-        {% else %}
-        <span class="badge bg-light text-muted border">ยังไม่มีผล</span>
-        {% endif %}
-        <i class="bi bi-chevron-down text-muted small"></i>
-      </div>
+<!-- ── Print Controls (no-print) ── -->
+<div class="no-print">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0"><i class="bi bi-bar-chart-line me-2"></i>ผลการแข่งขันทุกกิจกรรม</h1>
+    <div class="d-flex align-items-center gap-2">
+      <span class="text-muted small">{{ events|length }} กิจกรรม</span>
+      <button onclick="window.print()" class="btn btn-danger btn-sm">
+        <i class="bi bi-printer me-1"></i>พิมพ์ผลการแข่งขัน
+      </button>
     </div>
-    <div id="ev{{ event.id }}" class="collapse show">
-      <div class="card-body p-0">
-        {% if not e_parts %}
-        <div class="text-center py-4 text-muted small">
-          <i class="bi bi-clock me-1"></i>รอกรอกคะแนนและคำนวณรางวัล
+  </div>
+
+  {% if not events %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar-x" style="font-size:3rem"></i>
+    <h5 class="mt-3">ยังไม่มีกิจกรรมการแข่งขัน</h5>
+  </div>
+  {% else %}
+
+  <div class="row g-3 mb-4">
+  {% for event in events %}
+  {% set e_parts = results_by_event.get(event.id, []) %}
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"
+           style="background:#f8f9fa; cursor:pointer;"
+           data-bs-toggle="collapse" data-bs-target="#ev{{ event.id }}">
+        <span class="fw-semibold">
+          <i class="bi bi-trophy me-2 text-warning"></i>
+          {% if event.code %}<span class="text-primary me-1">[{{ event.code }}]</span>{% endif %}{{ event.name }}
+        </span>
+        <div class="d-flex align-items-center gap-2">
+          {% if e_parts %}
+          <span class="badge bg-success">{{ e_parts|length }} รางวัล</span>
+          {% else %}
+          <span class="badge bg-light text-muted border">ยังไม่มีผล</span>
+          {% endif %}
+          <i class="bi bi-chevron-down text-muted small"></i>
         </div>
-        {% else %}
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead>
-              <tr>
-                <th style="width:50px" class="text-center">อันดับ</th>
-                <th>ชื่อ-สกุล</th>
-                <th>โรงเรียน</th>
-                <th>รางวัล</th>
-                <th class="text-end" style="width:80px">คะแนน</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in e_parts %}
-              <tr class="{{ 'table-warning' if my_school_id and p.school_id == my_school_id else '' }}">
-                <td class="text-center fw-bold">
-                  {% if p.rank_pos == 1 %}🥇
-                  {% elif p.rank_pos == 2 %}🥈
-                  {% elif p.rank_pos == 3 %}🥉
-                  {% elif p.rank_pos %}{{ p.rank_pos }}
-                  {% else %}—{% endif %}
-                </td>
-                <td>
-                  <span class="fw-semibold">{{ p.student_name }}</span>
-                  {% if my_school_id and p.school_id == my_school_id %}
-                  <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem">โรงเรียนของฉัน</span>
-                  {% endif %}
-                </td>
-                <td class="text-muted small">{{ p.school_name }}</td>
-                <td>
-                  <span class="award-badge award-{{ p.award | award_css }}">{{ p.award }}</span>
-                </td>
-                <td class="text-end text-muted small">
-                  {{ p.score if p.score is not none else '—' }}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      </div>
+      <div id="ev{{ event.id }}" class="collapse show">
+        <div class="card-body p-0">
+          {% if not e_parts %}
+          <div class="text-center py-4 text-muted small">
+            <i class="bi bi-clock me-1"></i>รอกรอกคะแนนและคำนวณรางวัล
+          </div>
+          {% else %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th style="width:50px" class="text-center">อันดับ</th>
+                  <th>ชื่อ-สกุล</th>
+                  <th>โรงเรียน</th>
+                  <th>รางวัล</th>
+                  <th class="text-end" style="width:80px">คะแนน</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in e_parts %}
+                <tr class="{{ 'table-warning' if my_school_id and p.school_id == my_school_id else '' }}">
+                  <td class="text-center fw-bold">
+                    {% if p.rank_pos == 1 %}🥇
+                    {% elif p.rank_pos == 2 %}🥈
+                    {% elif p.rank_pos == 3 %}🥉
+                    {% elif p.rank_pos %}{{ p.rank_pos }}
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>
+                    <span class="fw-semibold">{{ p.student_name }}</span>
+                    {% if my_school_id and p.school_id == my_school_id %}
+                    <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem">โรงเรียนของฉัน</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-muted small">{{ p.school_name }}</td>
+                  <td>
+                    <span class="award-badge award-{{ p.award | award_css }}">{{ p.award }}</span>
+                  </td>
+                  <td class="text-end text-muted small">
+                    {{ p.score if p.score is not none else '—' }}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
         </div>
-        {% endif %}
       </div>
     </div>
   </div>
-</div>
-{% endfor %}
-</div>
+  {% endfor %}
+  </div>
 
-{% endif %}
+  {% endif %}
+</div><!-- /no-print -->
+
+<!-- ── Printable Document ── -->
+<div class="results-report-doc">
+
+  {% set has_results = events | selectattr('id', 'in', results_by_event.keys()) | list %}
+  {% if has_results %}
+
+  {# One doc-page per event that has results #}
+  {% for event in events %}
+  {% set e_parts = results_by_event.get(event.id, []) %}
+  {% if e_parts %}
+
+  <div class="doc-page">
+
+    <!-- Header -->
+    <div class="doc-header">
+      <div class="doc-org">{{ settings.network_name }}</div>
+      <div class="doc-title">ผลการแข่งขัน</div>
+      <div class="doc-subtitle">{{ settings.competition_name }}</div>
+      {% if thai_date %}<div class="doc-date">วันที่ {{ thai_date }}</div>{% endif %}
+    </div>
+
+    <!-- Event bar -->
+    <div class="doc-event-bar">
+      <span class="doc-event-label">กิจกรรม</span>
+      {% if event.code %}<span class="doc-event-code">[{{ event.code }}]</span>{% endif %}
+      <span class="doc-event-name">{{ event.name }}</span>
+    </div>
+
+    <!-- Table -->
+    <table class="doc-table">
+      <thead>
+        <tr>
+          <th class="col-rank">อันดับ</th>
+          <th class="col-student">ชื่อ-สกุล นักเรียน</th>
+          <th class="col-school">โรงเรียน</th>
+          <th class="col-award">รางวัล</th>
+          <th class="col-score">คะแนน</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in e_parts %}
+        <tr>
+          <td class="col-rank text-center">{{ p.rank_pos or '-' }}</td>
+          <td class="col-student">{{ p.student_name }}</td>
+          <td class="col-school">{{ p.school_name }}</td>
+          <td class="col-award">{{ p.award or '-' }}</td>
+          <td class="col-score text-center">
+            {{ '%.1f'|format(p.score) if p.score is not none else '-' }}
+          </td>
+        </tr>
+        {% endfor %}
+        <!-- Padding rows -->
+        {% for i in range([8 - e_parts|length, 0]|max) %}
+        <tr class="empty-row">
+          <td class="col-rank text-center">{{ e_parts|length + i + 1 }}</td>
+          <td class="col-student"></td>
+          <td class="col-school"></td>
+          <td class="col-award"></td>
+          <td class="col-score"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </div><!-- /doc-page -->
+
+  {% endif %}
+  {% endfor %}
+
+  {% endif %}
+</div><!-- /results-report-doc -->
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* ── Screen ── */
+.results-report-doc { display: none; }
+
+/* ── Print ── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 2cm 2cm 2cm 2.5cm;
+  }
+
+  body, html {
+    font-family: 'TH Sarabun New', 'TH SarabunPSK', 'Sarabun', sans-serif !important;
+    font-size: 16pt !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  .no-print, .sidebar, .main-content > .alert { display: none !important; }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .results-report-doc {
+    display: block;
+    font-family: 'TH Sarabun New', 'TH SarabunPSK', 'Sarabun', sans-serif;
+    font-size: 16pt;
+    line-height: 1.5;
+    color: #000;
+  }
+
+  .doc-page {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    page-break-after: always;
+  }
+
+  /* Header */
+  .doc-header {
+    text-align: center;
+    margin-bottom: 14pt;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8pt;
+  }
+  .doc-org {
+    font-size: 16pt;
+    font-weight: 700;
+    margin-bottom: 2pt;
+  }
+  .doc-title {
+    font-size: 18pt;
+    font-weight: 700;
+  }
+  .doc-subtitle {
+    font-size: 16pt;
+    font-weight: 600;
+  }
+  .doc-date {
+    font-size: 14pt;
+    margin-top: 4pt;
+    color: #333;
+  }
+
+  /* Event bar */
+  .doc-event-bar {
+    background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    border: 1.5px solid #888;
+    padding: 4pt 10pt;
+    margin-bottom: 8pt;
+    font-size: 16pt;
+    font-weight: 700;
+  }
+  .doc-event-label {
+    color: #555;
+    font-weight: 400;
+    margin-right: 6pt;
+  }
+  .doc-event-code {
+    color: #1a5276;
+    margin-right: 4pt;
+  }
+
+  /* Table */
+  .doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15pt;
+    line-height: 1.5;
+    table-layout: auto;
+  }
+  .doc-table th,
+  .doc-table td {
+    border: 1.5px solid #000;
+    padding: 3pt 7pt;
+    vertical-align: middle;
+  }
+  .doc-table thead tr {
+    background: #d6e4f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .doc-table thead th {
+    font-weight: 700;
+    text-align: center;
+  }
+  .doc-table tbody tr:nth-child(even) {
+    background: #fafafa !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .doc-table .empty-row td { color: transparent; }
+
+  .col-rank    { width: 8%;  text-align: center; white-space: nowrap; }
+  .col-student { white-space: nowrap; }
+  .col-school  { width: 32%; word-break: keep-all; }
+  .col-award   { width: 28%; white-space: nowrap; }
+  .col-score   { width: 10%; text-align: center; white-space: nowrap; }
+}
+</style>
 {% endblock %}

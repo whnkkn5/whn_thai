@@ -1138,6 +1138,7 @@ def all_results():
         WHERE p.award IS NOT NULL
         ORDER BY p.event_id, COALESCE(p.rank_pos, 999), st.name
     ''').fetchall()
+    settings = get_settings()
     db.close()
     results_by_event = {}
     for p in parts:
@@ -1146,7 +1147,9 @@ def all_results():
     return render_template('all_results.html',
         events=events,
         results_by_event=results_by_event,
-        my_school_id=my_school_id)
+        my_school_id=my_school_id,
+        settings=settings,
+        thai_date=format_thai_date(settings.get('competition_date','')))
 
 # ── API ───────────────────────────────────────────────────
 
