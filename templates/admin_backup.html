@@ -73,9 +73,49 @@
 
 </div>
 
-<div class="alert alert-info mt-4 small">
+<!-- New Year Reset -->
+<div class="card mt-4 border-danger">
+  <div class="card-header bg-danger text-white fw-semibold">
+    <i class="bi bi-arrow-clockwise me-1"></i>เริ่มปีการศึกษาใหม่
+  </div>
+  <div class="card-body">
+    <div class="row g-3 align-items-start">
+      <div class="col-md-7">
+        <p class="mb-2 fw-semibold">ข้อมูลที่จะถูกล้างออก:</p>
+        <ul class="small text-danger mb-2">
+          <li>กิจกรรมการแข่งขันทั้งหมด</li>
+          <li>รายชื่อผู้เข้าแข่งขัน คะแนน และรางวัล</li>
+          <li>รายชื่อครูผู้ฝึกสอนในกิจกรรม</li>
+          <li>รายชื่อนักเรียนและครูในโรงเรียน</li>
+          <li>ชื่องาน / วันที่จัดงาน (รีเซ็ตเป็นค่าว่าง)</li>
+        </ul>
+        <p class="mb-0 fw-semibold">ข้อมูลที่จะเก็บไว้:</p>
+        <ul class="small text-success mb-0">
+          <li>โรงเรียนและบัญชีผู้ใช้งาน</li>
+          <li>Template เกียรติบัตร</li>
+          <li>ชื่อผู้ลงนาม / ชื่อหน่วยงาน</li>
+        </ul>
+      </div>
+      <div class="col-md-5">
+        <div class="alert alert-warning small py-2">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>
+          <strong>สำรองข้อมูลก่อนเสมอ</strong><br>
+          กด "ดาวน์โหลด Backup" ด้านบนก่อนทำรายการนี้
+        </div>
+        <form method="POST" action="{{ url_for('admin_new_year_reset') }}"
+              onsubmit="return confirm('เริ่มปีการศึกษาใหม่?\n\nข้อมูลกิจกรรม นักเรียน ครู และคะแนนทั้งหมดจะถูกลบออก\n\nโรงเรียนและบัญชีผู้ใช้จะยังคงอยู่\n\n⚠️ กรุณาสำรองข้อมูลก่อนดำเนินการ')">
+          <button class="btn btn-danger w-100">
+            <i class="bi bi-arrow-clockwise me-1"></i>เริ่มปีการศึกษาใหม่
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info mt-3 small">
   <i class="bi bi-lightbulb me-1"></i>
-  <strong>แนะนำ:</strong> ควรสำรองข้อมูลก่อนทุกครั้งที่มีการแก้ไขข้อมูลสำคัญ หรือก่อน deploy ระบบใหม่
+  <strong>แนะนำ:</strong> ควรสำรองข้อมูลก่อนทุกครั้งที่มีการแก้ไขข้อมูลสำคัญ หรือก่อนเริ่มปีการศึกษาใหม่
 </div>
 
 {% endblock %}

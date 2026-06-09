@@ -1361,6 +1361,30 @@ def admin_backup_download():
     return Response(data, mimetype='application/json',
                     headers={'Content-Disposition': f'attachment; filename={fname}'})
 
+@app.route('/admin/new-year-reset', methods=['POST'])
+@admin_required
+def admin_new_year_reset():
+    db = get_db()
+    try:
+        db.execute('DELETE FROM coaches')
+        db.execute('DELETE FROM participants')
+        db.execute('DELETE FROM events')
+        db.execute('DELETE FROM students')
+        db.execute('DELETE FROM teachers')
+        for key in ['competition_name', 'competition_date']:
+            db.execute(
+                "INSERT INTO settings (key, value) VALUES (%s, '') ON CONFLICT (key) DO UPDATE SET value = ''",
+                [key]
+            )
+        db.commit()
+        flash('เริ่มปีการศึกษาใหม่เรียบร้อยแล้ว — ข้อมูลการแข่งขันถูกล้างออกแล้ว', 'success')
+    except Exception as e:
+        db.rollback()
+        flash(f'เกิดข้อผิดพลาด: {e}', 'danger')
+    finally:
+        db.close()
+    return redirect(url_for('admin_backup'))
+
 @app.route('/admin/backup/restore', methods=['POST'])
 @admin_required
 def admin_backup_restore():
