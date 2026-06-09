@@ -37,7 +37,7 @@
 
 {% if ju_tmpl %}
 {# ── Template-based certificate ── #}
-<div class="cert-tmpl no-print-border" style="position:relative; width:100%;">
+<div class="cert-tmpl no-print-border" style="position:relative; display:inline-block; width:100%; page-break-after:always;">
   <img src="{{ url_for('serve_template_image', tid=ju_tmpl.id) }}" style="width:100%; display:block;">
   {% for f in ju_tmpl.config %}
   {% set field_val = {
