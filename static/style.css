@@ -188,20 +188,28 @@ body { font-family: 'Sarabun', 'TH Sarabun New', Sarabun, sans-serif;
 
 /* ── Print media ─────────────────────────────────────── */
 @media print {
+  @page { size: A4 portrait; margin: 1cm; }
+
   body { background: #fff; margin: 0; }
   .sidebar, .print-controls, .no-print { display: none !important; }
-  .main-content { margin: 0; padding: 0; }
+  .main-content { margin: 0 !important; padding: 0 !important; }
 
   .cert-page {
-    width: 210mm; min-height: 148mm;
-    box-shadow: none; page-break-after: always;
-    margin: 0; padding: 12mm 16mm;
+    width: 100%;
+    min-height: calc(297mm - 2cm);
+    box-shadow: none;
+    page-break-after: always;
+    margin: 0;
+    padding: 10mm 12mm;
+    box-sizing: border-box;
   }
   .cert-tmpl {
+    display: block;
     box-shadow: none;
     margin: 0;
     width: 100%;
+    page-break-after: always;
   }
-  .cert-tmpl img { width: 100% !important; }
-  @page { size: A5 landscape; margin: 0; }
+  .cert-tmpl:last-of-type { page-break-after: auto; }
+  .cert-tmpl img { width: 100% !important; height: auto !important; }
 }
