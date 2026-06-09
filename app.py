@@ -162,6 +162,11 @@ def init_db():
         except Exception:
             db.rollback()
 
+    # migrate Arabic numerals → Thai numerals in award text
+    db.execute("UPDATE participants SET award = REPLACE(award, 'รองชนะเลิศอันดับ 1', 'รองชนะเลิศอันดับ ๑') WHERE award LIKE '%รองชนะเลิศอันดับ 1%'")
+    db.execute("UPDATE participants SET award = REPLACE(award, 'รองชนะเลิศอันดับ 2', 'รองชนะเลิศอันดับ ๒') WHERE award LIKE '%รองชนะเลิศอันดับ 2%'")
+    db.commit()
+
     admin = db.execute("SELECT 1 FROM users WHERE role='admin'").fetchone()
     if not admin:
         db.execute(
