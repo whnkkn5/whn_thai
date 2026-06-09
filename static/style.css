@@ -188,7 +188,7 @@ body { font-family: 'Sarabun', 'TH Sarabun New', Sarabun, sans-serif;
 
 /* ── Print media ─────────────────────────────────────── */
 @media print {
-  @page { size: A4 portrait; margin: 1cm; }
+  @page { size: A4 landscape; margin: 1cm; }
 
   body { background: #fff; margin: 0; }
   .sidebar, .print-controls, .no-print { display: none !important; }
@@ -196,7 +196,7 @@ body { font-family: 'Sarabun', 'TH Sarabun New', Sarabun, sans-serif;
 
   .cert-page {
     width: 100%;
-    min-height: calc(297mm - 2cm);
+    min-height: calc(210mm - 2cm);
     box-shadow: none;
     page-break-after: always;
     margin: 0;
