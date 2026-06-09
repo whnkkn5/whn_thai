@@ -1288,6 +1288,23 @@ def admin_delete_template(tid):
     flash('ลบ template แล้ว', 'info')
     return redirect(url_for('admin_templates'))
 
+@app.route('/admin/templates/<int:tid>/replace-image', methods=['POST'])
+@admin_required
+def admin_replace_template_image(tid):
+    f = request.files.get('image')
+    if not f or not f.filename:
+        flash('กรุณาเลือกไฟล์รูปภาพ', 'warning')
+        return redirect(url_for('admin_template_edit', tid=tid))
+    img_data = base64.b64encode(f.read()).decode('utf-8')
+    mime     = f.content_type or 'image/png'
+    db = get_db()
+    db.execute('UPDATE cert_templates SET image_data=%s, image_mime=%s WHERE id=%s',
+               [img_data, mime, tid])
+    db.commit()
+    db.close()
+    flash('เปลี่ยนรูป template เรียบร้อยแล้ว', 'success')
+    return redirect(url_for('admin_template_edit', tid=tid))
+
 @app.get('/uploads/template/<int:tid>')
 def serve_template_image(tid):
     db = get_db()

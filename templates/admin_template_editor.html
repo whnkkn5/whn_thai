@@ -34,6 +34,26 @@
         <small class="text-muted">คลิกที่ label แล้วลาก</small>
       </div>
       <div class="card-body p-2">
+        <!-- Replace image -->
+        <div class="mb-2">
+          <button class="btn btn-sm btn-outline-secondary" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#replaceImgForm">
+            <i class="bi bi-image me-1"></i>เปลี่ยนรูป Template
+          </button>
+          <div class="collapse mt-2" id="replaceImgForm">
+            <form method="POST"
+                  action="{{ url_for('admin_replace_template_image', tid=tmpl.id) }}"
+                  enctype="multipart/form-data"
+                  class="d-flex gap-2 align-items-center flex-wrap">
+              <input type="file" name="image" accept="image/*" class="form-control form-control-sm" style="max-width:280px" required>
+              <button class="btn btn-sm btn-primary">
+                <i class="bi bi-upload me-1"></i>อัปโหลดรูปใหม่
+              </button>
+              <small class="text-muted">ตำแหน่งข้อความจะยังคงอยู่เดิม</small>
+            </form>
+          </div>
+        </div>
+
         <div id="preview-wrap" style="position:relative; display:inline-block; width:100%; user-select:none;">
           <img id="preview-img" src="{{ url_for('serve_template_image', tid=tmpl.id) }}"
                style="width:100%; display:block; border-radius:4px;">
