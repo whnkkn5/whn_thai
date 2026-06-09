@@ -193,8 +193,8 @@ def format_thai_date(date_str):
 def award_css(award):
     if not award: return 'participate'
     if 'ชนะเลิศ' in award: return 'gold-champion'
-    if 'รองชนะเลิศอันดับ 1' in award: return 'gold-runner1'
-    if 'รองชนะเลิศอันดับ 2' in award: return 'gold-runner2'
+    if 'รองชนะเลิศอันดับ ๑' in award or 'รองชนะเลิศอันดับ 1' in award: return 'gold-runner1'
+    if 'รองชนะเลิศอันดับ ๒' in award or 'รองชนะเลิศอันดับ 2' in award: return 'gold-runner2'
     if 'ทอง' in award: return 'gold'
     if 'เงิน' in award: return 'silver'
     if 'ทองแดง' in award: return 'bronze'
@@ -221,8 +221,8 @@ def calculate_awards(event_id):
         rank  = i + 1
         score = row['score']
         if rank == 1 and score >= 80:   award = 'เหรียญทอง ชนะเลิศ'
-        elif rank == 2 and score >= 80: award = 'เหรียญทอง รองชนะเลิศอันดับ 1'
-        elif rank == 3 and score >= 80: award = 'เหรียญทอง รองชนะเลิศอันดับ 2'
+        elif rank == 2 and score >= 80: award = 'เหรียญทอง รองชนะเลิศอันดับ ๑'
+        elif rank == 3 and score >= 80: award = 'เหรียญทอง รองชนะเลิศอันดับ ๒'
         elif score >= 80: award = 'เหรียญทอง'
         elif score >= 70: award = 'เหรียญเงิน'
         elif score >= 60: award = 'เหรียญทองแดง'
