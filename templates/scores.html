@@ -53,13 +53,19 @@
           {% endfor %}
         </tbody>
       </table>
-      <div class="p-3 border-top d-flex gap-2">
+      <div class="p-3 border-top d-flex gap-2 flex-wrap">
         <button type="submit" class="btn btn-primary px-4">
           <i class="bi bi-save me-1"></i>บันทึกคะแนน & คำนวณรางวัล
         </button>
         <a href="{{ url_for('event_detail', eid=event.id) }}" class="btn btn-outline-secondary">
           ยกเลิก
         </a>
+        <form method="POST" action="{{ url_for('reset_event_results', eid=event.id) }}" class="ms-auto"
+              onsubmit="return confirm('ยกเลิกผลการแข่งขันทั้งหมดของกิจกรรมนี้?\nคะแนน รางวัล และอันดับจะถูกลบออกทั้งหมด')">
+          <button class="btn btn-outline-danger">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>ยกเลิกผลทั้งหมด
+          </button>
+        </form>
       </div>
     </form>
   </div>

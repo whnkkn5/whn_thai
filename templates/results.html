@@ -21,6 +21,12 @@
     <a href="{{ url_for('certificates') }}?event_id={{ event.id }}" class="btn btn-success">
       <i class="bi bi-award me-1"></i>พิมพ์เกียรติบัตร
     </a>
+    <form method="POST" action="{{ url_for('reset_event_results', eid=event.id) }}"
+          onsubmit="return confirm('ยกเลิกผลการแข่งขันทั้งหมดของกิจกรรมนี้?\nคะแนน รางวัล และอันดับจะถูกลบออกทั้งหมด')">
+      <button class="btn btn-outline-danger">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>ยกเลิกผล
+      </button>
+    </form>
   </div>
 </div>
 

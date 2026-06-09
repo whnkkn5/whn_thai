@@ -758,6 +758,19 @@ def event_scores(eid):
     db.close()
     return render_template('scores.html', event=event, participants=participants)
 
+@app.route('/event/<int:eid>/reset-results', methods=['POST'])
+@admin_required
+def reset_event_results(eid):
+    db = get_db()
+    db.execute(
+        'UPDATE participants SET score=NULL, rank_pos=NULL, award=NULL WHERE event_id=%s',
+        [eid]
+    )
+    db.commit()
+    db.close()
+    flash('ยกเลิกผลการแข่งขันเรียบร้อยแล้ว', 'warning')
+    return redirect(url_for('event_detail', eid=eid))
+
 @app.route('/event/<int:eid>/results')
 @admin_required
 def event_results(eid):
