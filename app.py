@@ -1368,7 +1368,6 @@ def admin_new_year_reset():
     try:
         db.execute('DELETE FROM coaches')
         db.execute('DELETE FROM participants')
-        db.execute('DELETE FROM events')
         db.execute('DELETE FROM students')
         db.execute('DELETE FROM teachers')
         for key in ['competition_name', 'competition_date']:
