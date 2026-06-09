@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}สำรอง / กู้คืนข้อมูล{% endblock %}
+{% block content %}
+<h1 class="page-title"><i class="bi bi-database-down me-2"></i>สำรอง / กู้คืนข้อมูล</h1>
+
+<div class="row g-4">
+
+  <!-- Backup -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header bg-primary text-white fw-semibold">
+        <i class="bi bi-download me-1"></i>สำรองข้อมูล (Export)
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">ดาวน์โหลดข้อมูลทั้งหมดเป็นไฟล์ <code>.json</code> เก็บไว้ในเครื่อง</p>
+
+        <table class="table table-sm table-borderless mb-3">
+          <tbody>
+            {% set labels = {
+              'settings':      'ตั้งค่าระบบ',
+              'schools':       'โรงเรียน',
+              'events':        'กิจกรรมการแข่งขัน',
+              'students':      'นักเรียน',
+              'teachers':      'ครู',
+              'participants':  'ผู้เข้าแข่งขัน',
+              'coaches':       'ครูผู้ฝึกสอน',
+              'users':         'ผู้ใช้งาน',
+              'cert_templates':'Template เกียรติบัตร'
+            } %}
+            {% for t, n in stats.items() %}
+            <tr>
+              <td class="text-muted small py-1"><i class="bi bi-table me-1"></i>{{ labels.get(t, t) }}</td>
+              <td class="text-end fw-semibold small py-1">{{ n }} รายการ</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <a href="{{ url_for('admin_backup_download') }}" class="btn btn-primary w-100">
+          <i class="bi bi-download me-1"></i>ดาวน์โหลด Backup
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Restore -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header bg-warning text-dark fw-semibold">
+        <i class="bi bi-upload me-1"></i>กู้คืนข้อมูล (Restore)
+      </div>
+      <div class="card-body">
+        <div class="alert alert-danger small py-2 mb-3">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>
+          <strong>คำเตือน:</strong> การกู้คืนจะ<u>ลบข้อมูลทั้งหมดที่มีอยู่</u>และแทนที่ด้วยข้อมูลจากไฟล์ backup
+        </div>
+
+        <form method="POST" action="{{ url_for('admin_backup_restore') }}"
+              enctype="multipart/form-data"
+              onsubmit="return confirm('ยืนยันการกู้คืนข้อมูล?\n\nข้อมูลปัจจุบันทั้งหมดจะถูกลบและแทนที่ด้วยข้อมูลจากไฟล์ที่เลือก\n\nดำเนินการต่อหรือไม่?')">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">เลือกไฟล์ Backup (.json)</label>
+            <input type="file" name="backup_file" class="form-control" accept=".json" required>
+            <div class="form-text text-muted">ไฟล์ที่ดาวน์โหลดมาจากระบบนี้เท่านั้น</div>
+          </div>
+          <button class="btn btn-warning w-100">
+            <i class="bi bi-upload me-1"></i>กู้คืนข้อมูล
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="alert alert-info mt-4 small">
+  <i class="bi bi-lightbulb me-1"></i>
+  <strong>แนะนำ:</strong> ควรสำรองข้อมูลก่อนทุกครั้งที่มีการแก้ไขข้อมูลสำคัญ หรือก่อน deploy ระบบใหม่
+</div>
+
+{% endblock %}

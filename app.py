@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, Response
 import os
 from datetime import datetime
 from functools import wraps
@@ -1327,6 +1327,77 @@ def get_active_templates():
     ).fetchall()
     db.close()
     return {r['cert_type']: {'id': r['id'], 'config': json.loads(r['config'])} for r in rows}
+
+# ── Backup / Restore ─────────────────────────────────────
+
+BACKUP_TABLES = ['settings', 'schools', 'events', 'students', 'teachers',
+                 'participants', 'coaches', 'users', 'cert_templates']
+
+@app.route('/admin/backup')
+@admin_required
+def admin_backup():
+    db = get_db()
+    stats = {}
+    for t in BACKUP_TABLES:
+        stats[t] = db.execute(f'SELECT COUNT(*) as n FROM {t}').fetchone()['n']
+    db.close()
+    return render_template('admin_backup.html', stats=stats)
+
+@app.route('/admin/backup/download')
+@admin_required
+def admin_backup_download():
+    db = get_db()
+    backup = {
+        'version': 1,
+        'exported_at': datetime.now().isoformat(),
+        'tables': {}
+    }
+    for t in BACKUP_TABLES:
+        rows = db.execute(f'SELECT * FROM {t}').fetchall()
+        backup['tables'][t] = [dict(r) for r in rows]
+    db.close()
+    data = json.dumps(backup, ensure_ascii=False, indent=2, default=str)
+    fname = 'backup_' + datetime.now().strftime('%Y%m%d_%H%M%S') + '.json'
+    return Response(data, mimetype='application/json',
+                    headers={'Content-Disposition': f'attachment; filename={fname}'})
+
+@app.route('/admin/backup/restore', methods=['POST'])
+@admin_required
+def admin_backup_restore():
+    f = request.files.get('backup_file')
+    if not f or not f.filename:
+        flash('กรุณาเลือกไฟล์ backup', 'warning')
+        return redirect(url_for('admin_backup'))
+    try:
+        data = json.loads(f.read().decode('utf-8'))
+        if data.get('version') != 1 or 'tables' not in data:
+            raise ValueError('รูปแบบไฟล์ไม่ถูกต้อง')
+    except Exception as e:
+        flash(f'ไฟล์ไม่ถูกต้อง: {e}', 'danger')
+        return redirect(url_for('admin_backup'))
+
+    db = get_db()
+    try:
+        # ลบข้อมูลเก่าตามลำดับ FK
+        for t in reversed(BACKUP_TABLES):
+            if t in data['tables']:
+                db.execute(f'DELETE FROM {t}')
+        # เพิ่มข้อมูลใหม่
+        for t in BACKUP_TABLES:
+            rows = data['tables'].get(t, [])
+            for row in rows:
+                cols = ', '.join(row.keys())
+                vals = ', '.join(['%s'] * len(row))
+                db.execute(f'INSERT INTO {t} ({cols}) VALUES ({vals})',
+                           list(row.values()))
+        db.commit()
+        flash(f'กู้คืนข้อมูลสำเร็จ — นำเข้า {sum(len(v) for v in data["tables"].values())} รายการ', 'success')
+    except Exception as e:
+        db.rollback()
+        flash(f'เกิดข้อผิดพลาดระหว่างกู้คืน: {e}', 'danger')
+    finally:
+        db.close()
+    return redirect(url_for('admin_backup'))
 
 # ─────────────────────────────────────────────────────────
 
