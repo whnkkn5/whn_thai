@@ -1170,9 +1170,10 @@ TEMPLATE_FIELDS = {
     'coach': [
         {'key':'name',     'label':'ชื่อ-สกุล',         'x':50,'y':42,'size':32,'bold':True, 'color':'#1a1a1a'},
         {'key':'position', 'label':'ตำแหน่ง + โรงเรียน','x':50,'y':52,'size':20,'bold':False,'color':'#333333'},
-        {'key':'event',    'label':'กิจกรรม + ระดับ',   'x':50,'y':63,'size':20,'bold':False,'color':'#1a5276'},
-        {'key':'award',    'label':'รางวัลที่ได้รับ',   'x':50,'y':73,'size':24,'bold':True, 'color':'#8b6914'},
-        {'key':'date',     'label':'วันที่',            'x':50,'y':84,'size':16,'bold':False,'color':'#666666'},
+        {'key':'body',     'label':'ครูผู้ฝึกสอน',      'x':50,'y':60,'size':20,'bold':False,'color':'#555555'},
+        {'key':'event',    'label':'กิจกรรม',            'x':50,'y':68,'size':20,'bold':False,'color':'#1a5276'},
+        {'key':'award',    'label':'รางวัลที่ได้รับ',   'x':50,'y':77,'size':24,'bold':True, 'color':'#8b6914'},
+        {'key':'date',     'label':'วันที่',            'x':50,'y':87,'size':16,'bold':False,'color':'#666666'},
     ],
     'judge': [
         {'key':'name',     'label':'ชื่อ-สกุล',         'x':50,'y':42,'size':32,'bold':True, 'color':'#1a1a1a'},
