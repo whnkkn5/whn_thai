@@ -72,9 +72,17 @@
              onclick="selectField('{{ f.key }}')">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <span class="fw-semibold small" style="color:{{ f.color }}">{{ f.label }}</span>
-            <span class="badge bg-light text-muted small" id="pos_{{ f.key }}">
-              {{ f.x|round(1) }}%, {{ f.y|round(1) }}%
-            </span>
+            <div class="d-flex align-items-center gap-1">
+              <span class="badge bg-light text-muted small" id="pos_{{ f.key }}">
+                {{ f.x|round(1) }}%, {{ f.y|round(1) }}%
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+                      style="font-size:.7rem; line-height:1.4"
+                      onclick="event.stopPropagation(); removeField('{{ f.key }}')"
+                      title="ลบช่องนี้">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
           </div>
           <div class="row g-1">
             <div class="col-6">
@@ -199,6 +207,19 @@ function updateFieldStyle(key) {
   el.style.fontWeight = bold ? 'bold' : 'normal';
   const cfg = CONFIG.find(f => f.key === key);
   if (cfg) { cfg.size = size; cfg.color = color; cfg.bold = bold; }
+}
+
+function removeField(key) {
+  if (!confirm('ลบช่อง "' + (CONFIG.find(f => f.key === key)?.label || key) + '" ออกจาก template?')) return;
+  // remove from CONFIG array
+  const idx = CONFIG.findIndex(f => f.key === key);
+  if (idx !== -1) CONFIG.splice(idx, 1);
+  // remove preview label
+  const lbl = document.querySelector('.field-label[data-key="' + key + '"]');
+  if (lbl) lbl.remove();
+  // remove control card
+  const card = document.querySelector('.field-card[data-key="' + key + '"]');
+  if (card) card.remove();
 }
 
 function selectField(key) {
