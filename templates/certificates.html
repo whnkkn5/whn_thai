@@ -169,9 +169,9 @@
   'position': c.position ~ ' โรงเรียน' ~ c.school_name,
   'school':   'โรงเรียน' ~ c.school_name,
   'event':    'การแข่งขัน' ~ c.event_name,
-  'award':    c.best_award or '',
+  'award':    ('ครูผู้ฝึกสอน ' ~ c.best_award) if c.best_award else 'ครูผู้ฝึกสอน',
   'date':     thai_date,
-  'body':     'ครูผู้ฝึกสอน'
+  'body':     ''
 }) }}
 {% endfor %}
 {% endif %}
