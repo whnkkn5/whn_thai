@@ -1054,7 +1054,12 @@ def certificates():
         JOIN teachers t ON t.id=c.teacher_id
         JOIN schools  s ON s.id=t.school_id
         JOIN events   e ON e.id=c.event_id
-        WHERE 1=1
+        WHERE EXISTS (
+            SELECT 1 FROM participants p3
+            JOIN students st3 ON st3.id=p3.student_id
+            WHERE p3.event_id=e.id AND st3.school_id=s.id
+            AND p3.score IS NOT NULL
+        )
     '''
     cp = []
     if school_id: cq += ' AND s.id=%s'; cp.append(school_id)
