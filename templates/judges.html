@@ -40,12 +40,48 @@
               <td class="fw-semibold">{{ j.name }}</td>
               <td>{{ j.position }}</td>
               <td class="text-end">
+                <button class="btn btn-sm btn-outline-secondary me-1"
+                        data-bs-toggle="modal" data-bs-target="#editJudge{{ j.id }}">
+                  <i class="bi bi-pencil"></i>
+                </button>
                 <form method="POST" action="{{ url_for('delete_judge', jid=j.id) }}"
                       class="d-inline" onsubmit="return confirm('ลบ {{ j.name }} ?')">
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>
               </td>
             </tr>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editJudge{{ j.id }}" tabindex="-1">
+              <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                  <div class="modal-header py-2">
+                    <h6 class="modal-title"><i class="bi bi-pencil me-1"></i>แก้ไขกรรมการ</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form method="POST" action="{{ url_for('edit_judge', jid=j.id) }}">
+                    <div class="modal-body">
+                      <div class="mb-2">
+                        <label class="form-label small mb-1">ชื่อ-สกุล</label>
+                        <input name="name" class="form-control form-control-sm"
+                               value="{{ j.name }}" required>
+                      </div>
+                      <div>
+                        <label class="form-label small mb-1">ตำแหน่ง</label>
+                        <input name="position" class="form-control form-control-sm"
+                               value="{{ j.position }}">
+                      </div>
+                    </div>
+                    <div class="modal-footer py-2">
+                      <button type="button" class="btn btn-sm btn-secondary"
+                              data-bs-dismiss="modal">ยกเลิก</button>
+                      <button class="btn btn-sm btn-primary">บันทึก</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
             {% endfor %}
           </tbody>
         </table>

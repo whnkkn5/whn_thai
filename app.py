@@ -963,6 +963,19 @@ def judges():
     db.close()
     return render_template('judges.html', judges=rows)
 
+@app.route('/judges/<int:jid>/edit', methods=['POST'])
+@admin_required
+def edit_judge(jid):
+    name     = request.form.get('name', '').strip()
+    position = request.form.get('position', '').strip()
+    if name:
+        db = get_db()
+        db.execute('UPDATE judges SET name=%s, position=%s WHERE id=%s', [name, position, jid])
+        db.commit()
+        db.close()
+        flash(f'แก้ไขข้อมูลกรรมการเรียบร้อยแล้ว', 'success')
+    return redirect(url_for('judges'))
+
 @app.route('/judges/<int:jid>/delete', methods=['POST'])
 @admin_required
 def delete_judge(jid):
