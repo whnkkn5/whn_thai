@@ -65,7 +65,7 @@
   <div class="col-lg-4">
     <div class="card">
       <div class="card-header"><i class="bi bi-sliders me-1"></i>ปรับแต่งข้อความแต่ละช่อง</div>
-      <div class="card-body p-2" style="max-height:70vh; overflow-y:auto;">
+      <div id="fields-panel" class="card-body p-2" style="max-height:55vh; overflow-y:auto;">
         {% for f in config %}
         <div class="field-card border rounded p-2 mb-2" data-key="{{ f.key }}"
              style="cursor:pointer; transition:.15s"
@@ -121,6 +121,22 @@
         </div>
         {% endfor %}
       </div>
+
+      <!-- Add field form -->
+      <div class="card-footer p-2 border-top">
+        <div class="d-flex gap-1">
+          <input type="text" id="new-field-label" class="form-control form-control-sm"
+                 placeholder="ข้อความที่ต้องการเพิ่ม เช่น ครูผู้ฝึกสอน"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();addField();}">
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="addField()"
+                  style="white-space:nowrap">
+            <i class="bi bi-plus-lg"></i> เพิ่ม
+          </button>
+        </div>
+        <div class="form-text text-muted mt-1" style="font-size:.7rem">
+          พิมพ์ข้อความแล้วกด เพิ่ม — จากนั้นลากวางตำแหน่งบน Preview
+        </div>
+      </div>
     </div>
     <div class="alert alert-success mt-2 small py-2">
       <i class="bi bi-check2-circle me-1"></i>
@@ -129,37 +145,38 @@
   </div>
 </div>
 
-<!-- Store config as JSON -->
 <script>
 const CONFIG = {{ config | tojson }};
 let dragging = null, dragOffX = 0, dragOffY = 0;
 
 const wrap = document.getElementById('preview-wrap');
 
-document.querySelectorAll('.field-label').forEach(el => {
+/* ── Drag helpers ── */
+function attachDragEvents(el) {
   el.addEventListener('mousedown', e => {
     e.preventDefault();
     dragging = el;
     el.style.cursor = 'grabbing';
     const rect = el.getBoundingClientRect();
-    dragOffX = e.clientX - rect.left - rect.width/2;
-    dragOffY = e.clientY - rect.top  - rect.height/2;
+    dragOffX = e.clientX - rect.left - rect.width / 2;
+    dragOffY = e.clientY - rect.top  - rect.height / 2;
     selectField(el.dataset.key);
   });
-  // Touch support
   el.addEventListener('touchstart', e => {
     e.preventDefault();
     dragging = el;
     const t = e.touches[0];
     const rect = el.getBoundingClientRect();
-    dragOffX = t.clientX - rect.left - rect.width/2;
-    dragOffY = t.clientY - rect.top  - rect.height/2;
+    dragOffX = t.clientX - rect.left - rect.width / 2;
+    dragOffY = t.clientY - rect.top  - rect.height / 2;
     selectField(el.dataset.key);
-  }, {passive:false});
-});
+  }, {passive: false});
+}
+
+document.querySelectorAll('.field-label').forEach(attachDragEvents);
 
 function getPercent(e) {
-  const r = wrap.getBoundingClientRect();
+  const r  = wrap.getBoundingClientRect();
   const cx = (e.clientX || e.touches[0].clientX) - dragOffX;
   const cy = (e.clientY || e.touches[0].clientY) - dragOffY;
   return {
@@ -182,13 +199,14 @@ function applyDrag(e) {
 }
 
 document.addEventListener('mousemove', applyDrag);
-document.addEventListener('touchmove',  applyDrag, {passive:false});
-document.addEventListener('mouseup',  () => { if (dragging) { dragging.style.cursor='grab'; dragging=null; } });
+document.addEventListener('touchmove',  applyDrag, {passive: false});
+document.addEventListener('mouseup',  () => { if (dragging) { dragging.style.cursor = 'grab'; dragging = null; } });
 document.addEventListener('touchend', () => { dragging = null; });
 
+/* ── Field updates ── */
 function updateFieldPos(key) {
-  const x = parseFloat(document.getElementById('x_' + key).value);
-  const y = parseFloat(document.getElementById('y_' + key).value);
+  const x  = parseFloat(document.getElementById('x_' + key).value);
+  const y  = parseFloat(document.getElementById('y_' + key).value);
   const el = document.querySelector('.field-label[data-key="' + key + '"]');
   el.style.left = x + '%';
   el.style.top  = y + '%';
@@ -211,15 +229,10 @@ function updateFieldStyle(key) {
 
 function removeField(key) {
   if (!confirm('ลบช่อง "' + (CONFIG.find(f => f.key === key)?.label || key) + '" ออกจาก template?')) return;
-  // remove from CONFIG array
   const idx = CONFIG.findIndex(f => f.key === key);
   if (idx !== -1) CONFIG.splice(idx, 1);
-  // remove preview label
-  const lbl = document.querySelector('.field-label[data-key="' + key + '"]');
-  if (lbl) lbl.remove();
-  // remove control card
-  const card = document.querySelector('.field-card[data-key="' + key + '"]');
-  if (card) card.remove();
+  document.querySelector('.field-label[data-key="' + key + '"]')?.remove();
+  document.querySelector('.field-card[data-key="'  + key + '"]')?.remove();
 }
 
 function selectField(key) {
@@ -227,26 +240,117 @@ function selectField(key) {
   const card = document.querySelector('.field-card[data-key="' + key + '"]');
   if (card) {
     card.style.background = '#e8f4ff';
-    card.scrollIntoView({behavior:'smooth', block:'nearest'});
+    card.scrollIntoView({behavior: 'smooth', block: 'nearest'});
   }
   document.querySelectorAll('.field-label').forEach(l => {
     l.style.outline = l.dataset.key === key ? '2px solid #0d6efd' : '';
   });
 }
 
+/* ── Add new field ── */
+function createFieldLabel(f) {
+  const el = document.createElement('div');
+  el.className = 'field-label';
+  el.dataset.key = f.key;
+  el.textContent = f.label;
+  Object.assign(el.style, {
+    position:   'absolute',
+    left:       f.x + '%',
+    top:        f.y + '%',
+    transform:  'translate(-50%,-50%)',
+    fontSize:   'calc(' + f.size + 'px * 0.5)',
+    fontWeight: f.bold ? 'bold' : 'normal',
+    color:      f.color,
+    cursor:     'grab',
+    whiteSpace: 'nowrap',
+    textShadow: '0 0 4px rgba(255,255,255,.9), 0 0 2px rgba(255,255,255,.9)',
+    padding:    '2px 6px',
+    border:     '1.5px dashed rgba(0,0,0,.3)',
+    borderRadius: '4px',
+    background: 'rgba(255,255,255,.25)'
+  });
+  attachDragEvents(el);
+  wrap.appendChild(el);
+}
+
+function createFieldCard(f) {
+  const k = f.key;
+  const card = document.createElement('div');
+  card.className = 'field-card border rounded p-2 mb-2';
+  card.dataset.key = k;
+  card.style.cssText = 'cursor:pointer; transition:.15s';
+  card.onclick = () => selectField(k);
+  card.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-1">
+      <span class="fw-semibold small" style="color:${f.color}">${f.label}</span>
+      <div class="d-flex align-items-center gap-1">
+        <span class="badge bg-light text-muted small" id="pos_${k}">${f.x.toFixed(1)}%, ${f.y.toFixed(1)}%</span>
+        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+                style="font-size:.7rem;line-height:1.4"
+                onclick="event.stopPropagation();removeField('${k}')" title="ลบช่องนี้">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>
+    <div class="row g-1">
+      <div class="col-6">
+        <label class="form-label mb-0" style="font-size:.7rem">X %</label>
+        <input type="number" id="x_${k}" class="form-control form-control-sm"
+               value="${f.x}" min="0" max="100" step="0.5" onchange="updateFieldPos('${k}')">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-0" style="font-size:.7rem">Y %</label>
+        <input type="number" id="y_${k}" class="form-control form-control-sm"
+               value="${f.y}" min="0" max="100" step="0.5" onchange="updateFieldPos('${k}')">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-0" style="font-size:.7rem">ขนาด (px)</label>
+        <input type="number" id="size_${k}" class="form-control form-control-sm"
+               value="${f.size}" min="8" max="120" step="1" onchange="updateFieldStyle('${k}')">
+      </div>
+      <div class="col-6">
+        <label class="form-label mb-0" style="font-size:.7rem">สี</label>
+        <input type="color" id="color_${k}" class="form-control form-control-sm form-control-color"
+               value="${f.color}" onchange="updateFieldStyle('${k}')">
+      </div>
+      <div class="col-12">
+        <div class="form-check form-switch mt-1">
+          <input class="form-check-input" type="checkbox" id="bold_${k}"
+                 ${f.bold ? 'checked' : ''} onchange="updateFieldStyle('${k}')">
+          <label class="form-check-label small" for="bold_${k}">ตัวหนา</label>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('fields-panel').appendChild(card);
+}
+
+function addField() {
+  const input = document.getElementById('new-field-label');
+  const label = input.value.trim();
+  if (!label) { input.focus(); return; }
+  const key = 'custom_' + Date.now();
+  const f   = {key, label, x: 50, y: 50, size: 20, bold: false, color: '#1a1a1a'};
+  CONFIG.push(f);
+  createFieldLabel(f);
+  createFieldCard(f);
+  input.value = '';
+  selectField(key);
+}
+
+/* ── Save ── */
 document.getElementById('btn-save').addEventListener('click', () => {
   fetch('{{ url_for("admin_save_template", tid=tmpl.id) }}', {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({config: CONFIG})
   }).then(r => r.json()).then(d => {
     if (d.ok) {
       const btn = document.getElementById('btn-save');
       btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>บันทึกแล้ว';
-      btn.classList.replace('btn-primary','btn-success');
+      btn.classList.replace('btn-primary', 'btn-success');
       setTimeout(() => {
         btn.innerHTML = '<i class="bi bi-save me-1"></i>บันทึก';
-        btn.classList.replace('btn-success','btn-primary');
+        btn.classList.replace('btn-success', 'btn-primary');
       }, 2000);
     }
   });
