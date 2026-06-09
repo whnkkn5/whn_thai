@@ -7,16 +7,6 @@
   <div class="d-flex align-items-center gap-3 flex-wrap w-100">
     <strong><i class="bi bi-person-badge me-1"></i>พิมพ์เกียรติบัตรกรรมการ</strong>
 
-    <form method="GET" class="d-flex gap-2 flex-wrap">
-      <select name="event_id" class="form-select form-select-sm" style="width:240px">
-        <option value="">ทุกกิจกรรม</option>
-        {% for e in events %}
-        <option value="{{ e.id }}" {{ 'selected' if selected_event==e.id }}>{% if e.code %}[{{ e.code }}] {% endif %}{{ e.name }}</option>
-        {% endfor %}
-      </select>
-      <button class="btn btn-outline-primary btn-sm"><i class="bi bi-filter me-1"></i>กรอง</button>
-    </form>
-
     <div class="ms-auto d-flex gap-2 align-items-center">
       <span class="text-muted small">{{ judge_certs|length }} ใบ</span>
       {% if active_templates.get('judge') %}
@@ -37,8 +27,8 @@
 {% if judge_certs|length == 0 %}
 <div class="text-center py-5 text-muted no-print">
   <i class="bi bi-inbox" style="font-size:3rem"></i>
-  <h5 class="mt-3">ไม่มีเกียรติบัตรกรรมการ</h5>
-  <p>ตรวจสอบว่าได้เพิ่มกรรมการในกิจกรรมแล้ว หรือเปลี่ยนตัวกรองด้านบน</p>
+  <h5 class="mt-3">ไม่มีข้อมูลกรรมการ</h5>
+  <p>กรุณาเพิ่มกรรมการที่หน้า <a href="{{ url_for('judges') }}">คณะกรรมการ</a> ก่อน</p>
 </div>
 {% endif %}
 
@@ -51,9 +41,9 @@
   <img src="{{ url_for('serve_template_image', tid=ju_tmpl.id) }}" style="width:100%; display:block;">
   {% for f in ju_tmpl.config %}
   {% set field_val = {
-    'name':     c.judge_name,
+    'name':     c.name,
     'position': c.position,
-    'event':    'การแข่งขัน' ~ c.event_name,
+    'event':    settings.competition_name,
     'date':     thai_date
   }.get(f.key) %}
   {% if field_val %}
@@ -87,10 +77,9 @@
     <div class="cert-subtitle">ขอมอบเกียรติบัตรฉบับนี้ให้แก่</div>
   </div>
   <div class="cert-body">
-    <div class="cert-name">{{ c.judge_name }}</div>
+    <div class="cert-name">{{ c.name }}</div>
     <div class="cert-school">{{ c.position }}</div>
     <div class="cert-text">ที่ได้ปฏิบัติหน้าที่เป็นคณะกรรมการตัดสิน</div>
-    <div class="cert-event">การแข่งขัน{{ c.event_name }}</div>
     <div class="cert-award-wrap">
       <span class="cert-award judge-cert">กรรมการตัดสิน</span>
     </div>
