@@ -196,20 +196,29 @@ body { font-family: 'Sarabun', 'TH Sarabun New', Sarabun, sans-serif;
 
   .cert-page {
     width: 100%;
-    min-height: calc(210mm - 2cm);
+    height: 100vh;
+    min-height: unset;
     box-shadow: none;
     page-break-after: always;
     margin: 0;
-    padding: 10mm 12mm;
+    padding: 8mm 10mm;
     box-sizing: border-box;
+    overflow: hidden;
   }
   .cert-tmpl {
     display: block;
     box-shadow: none;
     margin: 0;
     width: 100%;
+    height: 100vh;
     page-break-after: always;
+    overflow: hidden;
   }
   .cert-tmpl:last-of-type { page-break-after: auto; }
-  .cert-tmpl img { width: 100% !important; height: auto !important; }
+  .cert-tmpl img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: fill;
+    display: block;
+  }
 }
